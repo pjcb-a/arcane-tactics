@@ -5,7 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
-#include <include/common.h>
+#include "common.h"
 
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
@@ -51,10 +51,19 @@ int main(int argc, char *argv[]){
         die_with_error("Error: accept() Failed.");
 
     printf("Client succesfully connected ...\n\n");
-    printf("-------------------------------\n"); 
-    printf("Welcome to Arcane Tactics!\n\n");   
-    printf("-------------------------------\n"); 
 
+    GameState game;
+
+    // Initialize game state for both players (server and client)
+    game.p1_status.hp = MAX_HP;
+    game.p1_status.energy = START_ENERGY;
+    game.p1_status.hand_count = 0;
+
+    game.p2_status.hp = MAX_HP;
+    game.p2_status.energy = START_ENERGY;
+    game.p2_status.hand_count = 0;
+
+    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
     // Communicate    
         while (1) {
 

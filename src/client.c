@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
+#include "common.h"
 
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
