@@ -1,18 +1,3 @@
-/* Filename:	
- *      client.c
- *
- * Description:
- *      This program is used in tandem with server.c demonstrating the use of sockets to create a TCP client.
- *
- * Compile Instructions:
- *      `gcc -o client client.c'
- * 
- * Author:
-        John Paul Jacob
-        jpjacob@gbox.adnu.edu.ph
-        Ateneo de Naga University
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

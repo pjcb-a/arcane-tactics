@@ -1,18 +1,3 @@
-/* Filename:
- *      server.c
- *
- * Description:
- *      This program is used in tandem with client.c demonstrating the use of sockets to create a TCP server.
- *
- * Compile Instructions:
- *      `gcc -o server server.c'
- * 
- * Author:
-        John Paul Jacob
-        jpjacob@gbox.adnu.edu.ph
-        Ateneo de Naga University
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <include/common.h>
 
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
@@ -35,7 +21,7 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-    printf("Server starting ...\n");
+    printf("Server starting ...\n\n");
     // Create a socket for incoming connections
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0) 
@@ -64,19 +50,28 @@ int main(int argc, char *argv[]){
     if (client_sock < 0) 
         die_with_error("Error: accept() Failed.");
 
-    printf("Client succesfully connected ...\n");    
+    printf("Client succesfully connected ...\n\n");
+    printf("-------------------------------\n"); 
+    printf("Welcome to Arcane Tactics!\n\n");   
+    printf("-------------------------------\n"); 
+
     // Communicate    
         while (1) {
-            printf("< ");
-            fgets(buffer, 255, stdin);
-            send(client_sock, buffer, strlen(buffer), 0);
+
+            Player p1 = {MAX_HP, START_ENERGY, {0}, 0}; //Server
+            Player p2 = {MAX_HP, START_ENERGY, {0}, 0}; //Client
+
+
+            // printf("< ");
+            // fgets(buffer, 255, stdin);
+            // send(client_sock, buffer, strlen(buffer), 0);
             
-            // receive from client
-            bzero(buffer, 256);
-            n = recv(client_sock, buffer, 255, 0);
-            if (n < 0) 
-                die_with_error("Error: recv() Failed.");
-            printf("[client] > %s", buffer);
+            // // receive from client
+            // bzero(buffer, 256);
+            // n = recv(client_sock, buffer, 255, 0);
+            // if (n < 0) 
+            //     die_with_error("Error: recv() Failed.");
+            // printf("[client] > %s", buffer);
         }
 
         printf("Closing connection ...\n");
