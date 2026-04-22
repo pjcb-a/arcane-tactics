@@ -55,6 +55,7 @@ int main(int argc, char *argv[]){
     listen(server_sock, 5);
     printf("Server listening to port %d ...\n", port_no);
     
+    while(1){
     printf("Waiting for connection(s) ...\n");
 
     // Accept new connection
@@ -65,24 +66,22 @@ int main(int argc, char *argv[]){
 
     printf("Client succesfully connected ...\n");    
     // Communicate    
-    
-    printf("< ");
-    bzero(buffer, 256);
-    fgets(buffer, 255, stdin);
-    
-    n = send(client_sock, buffer, strlen(buffer), 0);
-    if (n < 0) 
-         die_with_error("Error: send() Failed.");
-         
-    bzero(buffer, 256);
-    n = recv(server_sock, buffer, 255, 0);
-    if (n < 0) 
-         die_with_error("Error: recv() Failed.");
-    printf("[client] > %s\n", buffer);
-    
-    printf("Closing connection ...\n");
-    close(client_sock);
-    
-    close(server_sock);
+        while (1) {
+            printf("< ");
+            fgets(buffer, 255, stdin);
+            send(client_sock, buffer, strlen(buffer), 0);
+            
+            // receive from client
+            bzero(buffer, 256);
+            n = recv(client_sock, buffer, 255, 0);
+            if (n < 0) 
+                die_with_error("Error: recv() Failed.");
+            printf("[client] > %s", buffer);
+        }
+
+        printf("Closing connection ...\n");
+        close(client_sock);
+    }
+        close(server_sock);
     return 0; 
 }

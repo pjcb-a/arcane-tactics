@@ -32,8 +32,8 @@ int main(int argc,  char *argv[]){
     int client_sock,  port_no,  n;
     struct sockaddr_in server_addr;
     struct hostent *server;
-
     char buffer[256];
+
     if (argc < 3) {
         printf("Usage: %s hostname port_no",  argv[0]);
         exit(1);
@@ -44,6 +44,7 @@ int main(int argc,  char *argv[]){
     client_sock = socket(AF_INET,  SOCK_STREAM,  0);
     if (client_sock < 0) 
         die_with_error("Error: socket() Failed.");
+
 
     printf("Looking for host '%s'...\n", argv[1]);
     server = gethostbyname(argv[1]);
@@ -56,10 +57,7 @@ int main(int argc,  char *argv[]){
     port_no = atoi(argv[2]);
     bzero((char *) &server_addr,  sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr,  
-         (char *)&server_addr.sin_addr.s_addr, 
-         server->h_length);
-         
+    bcopy((char *)server->h_addr_list[0], (char *)&server_addr.sin_addr.s_addr, server->h_length);
     server_addr.sin_port = htons(port_no);
 
     printf("Connecting to server at port %d...\n", port_no);
@@ -69,21 +67,23 @@ int main(int argc,  char *argv[]){
     printf("Connection successful!\n");
 
     // Communicate
-    printf("< ");
-    bzero(buffer, 256);
-    fgets(buffer, 255, stdin);
-    
-    n = send(client_sock, buffer, strlen(buffer), 0);
-    if (n < 0) 
-         die_with_error("Error: send() Failed.");
-         
-    bzero(buffer, 256);
-    n = recv(client_sock, buffer, 255, 0);
-    if (n < 0) 
-         die_with_error("Error: recv() Failed.");
-    printf("[server] > %s\n", buffer);
+    while(1) {
+        bzero(buffer, 256);
+        n = recv(client_sock, buffer, 255, 0);
+        if (n < 0) 
+             die_with_error("Error: recv() Failed.");
 
+        printf("[server]> %s", buffer);
+
+        printf("< ");
+        bzero(buffer, 256);
+        fgets(buffer, 255, stdin);
+
+        n = send(client_sock, buffer, strlen(buffer), 0);
+        if (n < 0) 
+            die_with_error("Error: send() Failed.");
+    }
+    printf("Server disconnected.\n");
     close(client_sock);
-    
     return 0;
 }
