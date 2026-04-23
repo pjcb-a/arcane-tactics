@@ -5,19 +5,25 @@
 #include "common.h"
 #include <time.h>
 
-// array of cards for each player to draw from
-const Card Card_Pool[10] = {
-    {"Spell 1", 67, 0, 2, 1},
-    {"Spell 2", 67, 0, 2, 2},
-    {"Spell 3", 67, 0, 3, 1},
-    {"SPell 4", 67, 1, 1, 1},
-    {"Spell 5", 67, 0, 1, 0},
-    {"Spell 6", 67, -1, 1, 0},
-    {"Spell 7", 67, 0, 1, 0},
-    {"Spell 8", 67, 0, 1, 0},
-    {"Spell 9", 67, 0, 1, 0},
-    {"Spell 10", 67, -1, 1, 0}
+// ALL CARDS/ABILITIES
+const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
+
+    // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
+    {"Laser Beam", 10, 0, 1}, // light atk
+    {"Comet", 25, 0, 2}, // heavy atk
+    {"Lightning Flash", 8, 0, 1}, // PRIORITY attack. takes queue priority regardless of attack order
+    {"Shackle", 5, 1, 1}, // enemy deals -8 damage next atk
+    {"Life Drain", 10, 10, 2}, // 10 dmg and 10 heal
+
+    // UTILITY MOVES (defense, healing, buffs, debuffs)
+    {"Barrier", 0, 18, 2}, // add 18 shield
+    {"Psychic", 2, 0, 1}, // 40% chance to Confus
+    {"Rejuvenate", 0, 10, 1}, 
+    {"Aura Stance", 0, 0, 1},
+    {"Arcane Gambit", 10, 20, 1}
 };
+
+// to add ni xian: status effects (stun and shackle)
 
 // just error handling functions...
 void die_with_error(char *error_msg){
