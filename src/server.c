@@ -13,8 +13,44 @@ int main(int argc, char *argv[]){
 
     srand(time(NULL)); // Seed the random number generator for card drawing
 
-    int server_sock, client_sock, port_no, n;
+    int server_sock, client_sock, port_no, n, client_size;
     struct sockaddr_in server_addr, client_addr;
+
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+        exit(1);
+    }
+
+        if (argc < 2) {
+        printf("Usage: %s port_no\n", argv[0]);
+        exit(1);
+    }
+
+    printf("Server starting ...\n");
+
+    // Socket setup
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_sock < 0)
+        die_with_error("Error: socket() Failed.");
+
+    bzero((char *) &server_addr, sizeof(server_addr));
+    port_no = atoi(argv[1]);
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(port_no);
+
+    if (bind(server_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+        die_with_error("Error: bind() Failed.");
+
+    listen(server_sock, 5);
+    printf("Server listening on port %d ...\n", port_no);
+
+    client_size = sizeof(client_addr);
+    client_sock = accept(server_sock, (struct sockaddr *) &client_addr, &client_size);
+    if (client_sock < 0)
+        die_with_error("Error: accept() Failed.");
+
+    printf("Client successfully connected ...\n\n");
 
     GameState game;
     Player p1 = {MAX_HP, START_ENERGY, {0}, 0}; //Server
@@ -23,10 +59,12 @@ int main(int argc, char *argv[]){
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
     game.p1_status.hand_count = 0;
+    game.p1_status.dice_roll = 0;
 
     game.p2_status.hp = MAX_HP;
     game.p2_status.energy = START_ENERGY;
     game.p2_status.hand_count = 0;
+    game.p2_status.dice_roll = 0;
 
     strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
     
@@ -45,22 +83,25 @@ int main(int argc, char *argv[]){
 
             printf(" ---- YOUR HAND ---- \n");
             for(int i = 0; i < game.p1_status.hand_count; i++) {
-                printf("[%d] %s\n", i, game.p1_status.hand[i].name);
+            printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
+                game.p1_status.hand[i].name,
+                game.p1_status.hand[i].damage,
+                game.p1_status.hand[i].utility,
+                game.p1_status.hand[i].cost);
+            }            
+            
+            //p1 card move
+            printf("< Select card index to play >>");
+            int choice;
+            scanf("%d", &choice);
 
-                //p1 card move
-                printf("< Select card index to play >>");
-                int choice;
-                scanf("%d", &choice);
-
-                //p2 card move
-                printf("Waiting for opponent's move...\n");
-                int p2_choice;
-                recv(client_sock, &p2_choice, sizeof(int), 0);
-            }
-
-
-            close(client_sock);
-        close(server_sock);
+            //p2 card move
+            printf("Waiting for opponent's move...\n");
+            int p2_choice;
+            recv(client_sock, &p2_choice, sizeof(int), 0);
         }
+
+    close(client_sock);
+    close(server_sock);
     return 0; 
 }
