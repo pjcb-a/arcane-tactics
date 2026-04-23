@@ -22,7 +22,7 @@ typedef struct {
 typedef struct {
     int hp;
     int energy;
-    Card hand[3];
+    Card hand[5];
     int hand_count;
 } Player;
 

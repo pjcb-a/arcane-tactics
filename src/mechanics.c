@@ -38,3 +38,5 @@ void draw_card(Player *player, int num_cards) {
         player->hand_count++;
     }
 }
+
+

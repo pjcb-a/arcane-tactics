@@ -14,58 +14,43 @@ int main(int argc,  char *argv[]){
     int client_sock,  port_no,  n;
     struct sockaddr_in server_addr;
     struct hostent *server;
-    char buffer[256];
+    
+    GameState game;
+    Player p1 = {MAX_HP, START_ENERGY, {0}, 0}; //Server
+    Player p2 = {MAX_HP, START_ENERGY, {0}, 0}; //Client
+    // Initialize game state for both players (server and client)
+    game.p1_status.hp = MAX_HP;
+    game.p1_status.energy = START_ENERGY;
+    game.p1_status.hand_count = 0;
 
-    if (argc < 3) {
-        printf("Usage: %s hostname port_no",  argv[0]);
-        exit(1);
-    }
+    game.p2_status.hp = MAX_HP;
+    game.p2_status.energy = START_ENERGY;
+    game.p2_status.hand_count = 0;
 
-    printf("Client starting ...\n");
-    // Create a socket using TCP
-    client_sock = socket(AF_INET,  SOCK_STREAM,  0);
-    if (client_sock < 0) 
-        die_with_error("Error: socket() Failed.");
+    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
-
-    printf("Looking for host '%s'...\n", argv[1]);
-    server = gethostbyname(argv[1]);
-    if (server == NULL) {
-        die_with_error("Error: No such host.");
-    }
-    printf("Host found!\n");
-
-    // Establish a connection to server
-    port_no = atoi(argv[2]);
-    bzero((char *) &server_addr,  sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr_list[0], (char *)&server_addr.sin_addr.s_addr, server->h_length);
-    server_addr.sin_port = htons(port_no);
-
-    printf("Connecting to server at port %d...\n", port_no);
-    if (connect(client_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) 
-        die_with_error("Error: connect() Failed.");
-
-    printf("Connection successful!\n");
-
-    // Communicate
     while(1) {
-        bzero(buffer, 256);
-        n = recv(client_sock, buffer, 255, 0);
-        if (n < 0) 
-             die_with_error("Error: recv() Failed.");
+        recv(client_sock, &game, sizeof(game), 0);
 
-        printf("[server]> %s", buffer);
+        printf("Message: %s\n", game.message);
+        printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+        printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+    
+        printf(" ---- YOUR HAND ---- \n");
+            for(int i = 0; i < game.p1_status.hand_count; i++) {
+                printf("[%d] %s\n", i, game.p1_status.hand[i].name);
 
-        printf("< ");
-        bzero(buffer, 256);
-        fgets(buffer, 255, stdin);
+                //p1 card move
+                printf("< Select card index to play >>");
+                int choice;
+                scanf("%d", &choice);
+                send(client_sock, &choice, sizeof(int), 0);
 
-        n = send(client_sock, buffer, strlen(buffer), 0);
-        if (n < 0) 
-            die_with_error("Error: send() Failed.");
+                //p2 card move
+                printf("Waiting for opponent's move...\n");
+                int p2_choice;
+                recv(client_sock, &p2_choice, sizeof(int), 0);
+            }
     }
-    printf("Server disconnected.\n");
-    close(client_sock);
     return 0;
 }
