@@ -14,18 +14,8 @@ int main(int argc,  char *argv[]){
     int client_sock,  port_no, n;
     struct sockaddr_in server_addr;
     struct hostent *server;
-    
-    GameState game;
-    Player p1 = {MAX_HP, START_ENERGY, {0}, 0}; //Server
-    Player p2 = {MAX_HP, START_ENERGY, {0}, 0}; //Client
-    // Initialize game state for both players (server and client)
-    game.p1_status.hp = MAX_HP;
-    game.p1_status.energy = START_ENERGY;
-    game.p1_status.hand_count = 0;
 
-    game.p2_status.hp = MAX_HP;
-    game.p2_status.energy = START_ENERGY;
-    game.p2_status.hand_count = 0;
+    GameState game;
 
     strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
@@ -59,13 +49,20 @@ int main(int argc,  char *argv[]){
     printf("Connection successful!\n");
 
     printf("%s\n\n", game.message);
-        while(game.p1_status.hp > 0 && game.p2_status.hp > 0) {
-            recv(client_sock, &game, sizeof(game), 0);
+
+
+        while(1) {
+
+            n = recv(client_sock, &game, sizeof(game), 0);
+            if(n < 0){
+                die_with_error("Error: Server Disconnected...\n");
+                break;
+            }
 
             printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
         
-            printf(" ---- YOUR HAND ---- \n");
+            printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
                     printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                     game.p2_status.hand[i].name,
@@ -75,15 +72,13 @@ int main(int argc,  char *argv[]){
             }
 
             //p2 card move
-            printf("< Select card index to play >> ");
-            int choice;
-            scanf("%d", &choice);
-            send(client_sock, &choice, sizeof(int), 0);
+            printf("\n< Select card index to play >> ");
+            int p2_choice;
+            scanf("%d", &p2_choice);
+            send(client_sock, &p2_choice, sizeof(int), 0);
 
             //opponents move
             printf("Waiting for opponent's move...\n");
-            int p1_choice;
-            recv(client_sock, &p1_choice, sizeof(int), 0);
         }
         
     close(client_sock);

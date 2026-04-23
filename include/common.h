@@ -33,6 +33,8 @@ typedef struct {
     Player p1_status; // Server 
     Player p2_status; // Client 
     char message[256]; // "Combat results", "Your turn", etc.
+    int p1_roll;
+    int p2_roll;
 } GameState;
 
 void die_with_error(char *error_msg);

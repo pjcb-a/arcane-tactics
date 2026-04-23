@@ -9,26 +9,38 @@
 const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
 
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
-    {"Laser Beam", 10, 0, 1}, // light atk
-    {"Comet", 25, 0, 2}, // heavy atk
-    {"Lightning Flash", 8, 0, 1}, // PRIORITY attack. takes queue priority regardless of attack order
-    {"Shackle", 5, 1, 1}, // enemy deals -8 damage next atk
-    {"Life Drain", 10, 10, 2}, // 10 dmg and 10 heal
+    {"Laser Beam", 10, 0, 1, 0}, // light atk
+    {"Comet", 25, 0, 2, 0}, // heavy atk
+    {"Lightning Flash", 8, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
+    {"Shackle", 5, 1, 1, 0}, // enemy deals -8 damage next atk
+    {"Life Drain", 10, 10, 2, 0}, // 10 dmg and 10 heal
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
-    {"Barrier", 0, 18, 2}, // add 18 shield
-    {"Psychic", 2, 0, 1}, // 40% chance to stun enemies. stunned enemies will miss (nullify) their next move
-    {"Rejuvenate", 0, 10, 1}, // regen 10hp
-    {"Aura Stance", 0, 0, 1}, // next move after aura stance has a 30% chance to deal 2x damage
-    {"Arcane Gambit", 10, 20, 1} // 50/50 chance to heal 20 hp or deal 10 dmg to yourself
+    {"Barrier", 0, 18, 2, 0}, // add 18 shield
+    {"Psychic", 2, 0, 1, 0}, // 40% chance to stun enemies. stunned enemies will miss (nullify) their next move
+    {"Rejuvenate", 0, 10, 1, 0}, // regen 10hp
+    {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a 30% chance to deal 2x damage
+    {"Arcane Gambit", 10, 20, 1, 0} // 50/50 chance to heal 20 hp or deal 10 dmg to yourself
 };
 
 // to add ni xian: status effects (stun and shackle)
 
-// just error handling functions...
+// Just error handling functions...
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
     exit(-1);
+}
+
+
+// Dice roll for checking if who goes first.
+void dice_roll(int *p1_roll, int *p2_roll){
+
+    do {
+        *p1_roll = (rand() % 6) + 1;
+        *p2_roll = (rand() % 6) + 1;
+    } while (*p1_roll == *p2_roll);
+
+    return (*p1_roll > *p2_roll) ? 1 : 2;
 }
 
 // the random card giver function to each player at the start of the game and when they draw cards

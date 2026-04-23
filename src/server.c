@@ -13,7 +13,7 @@ int main(int argc, char *argv[]){
 
     srand(time(NULL)); // Seed the random number generator for card drawing
 
-    int server_sock, client_sock, port_no, n, client_size;
+    int server_sock, client_sock, port_no, client_size, n;
     struct sockaddr_in server_addr, client_addr;
 
     if (argc < 2) {
@@ -47,8 +47,10 @@ int main(int argc, char *argv[]){
     printf("Client successfully connected ...\n\n");
 
     GameState game;
-    Player p1 = {MAX_HP, START_ENERGY, {0}, 0}; //Server
-    Player p2 = {MAX_HP, START_ENERGY, {0}, 0}; //Client
+    memset(&game, 0, sizeof(GameState));
+
+    Player p1; //Server
+    Player p2; //Client
     // Initialize game state for both players (server and client)
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
@@ -67,12 +69,16 @@ int main(int argc, char *argv[]){
     //communicate
  
     printf(" %s\n\n", game.message);
+
         while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
             // Send game state to client
-            send(client_sock, &game, sizeof(game), 0);
+            
+            if (send(client_sock, &game, sizeof(game), 0))
+                die_with_error("Error: send() Failed.");
             
             printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+
 
             printf(" \n---- YOUR HAND ---- \n\n");
             for(int i = 0; i < game.p1_status.hand_count; i++) {
@@ -83,20 +89,25 @@ int main(int argc, char *argv[]){
                 game.p1_status.hand[i].cost);
             }            
             
-            //p1 card move
+            //P1 card move
             printf("\n< Select card index to play >>  ");
-            int choice;
-            scanf("%d", &choice);
+            int p1_choice;
+            scanf("%d", &p1_choice);
 
-            //p2 card move
+            //P2 card move (recieve from client)
             printf("\nWaiting for opponent's move...\n");
             int p2_choice;
-            recv(client_sock, &p2_choice, sizeof(int), 0);
-        }
 
-        // Collect Server Move: Get choice via scanf.
+            n = recv(client_sock, &p2_choice, sizeof(int), 0);
+            if (n < 0){
+                die_with_error("Error: Client Disconnected...\n");
+                break;
+            }
 
-// Collect Client Move: Get p2_choice via recv.
+            printf("Log: P1 chose %d, P2 chose %d\n", p1_choice, p2_choice);
+        game.p2_status.hp -= 10; 
+    }
+
 
 // Push to PQ: Add both choices to your Priority Queue.
 
