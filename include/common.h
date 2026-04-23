@@ -22,17 +22,18 @@ typedef struct {
 typedef struct {
     int hp;
     int energy;
-    Card hand[5];
+    Card hand[3];
     int hand_count;
 } Player;
 
-// This is what the Server sends to the Client to update their screen
+// Game state after each turn
 typedef struct {
-    Player p1_status; // Server (hidden hand)
-    Player p2_status; // Client (visible hand)
+    Player p1_status; // Server 
+    Player p2_status; // Client 
     char message[256]; // "Combat results", "Your turn", etc.
 } GameState;
 
 void die_with_error(char *error_msg);
+void draw_card(Player *player, int num_cards);
 
 #endif
