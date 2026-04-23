@@ -7,6 +7,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include "common.h"
+#include "mechanics.c"
 
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
