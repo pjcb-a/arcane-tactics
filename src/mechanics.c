@@ -17,10 +17,10 @@ const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
     {"Barrier", 0, 18, 2}, // add 18 shield
-    {"Psychic", 2, 0, 1}, // 40% chance to Confus
-    {"Rejuvenate", 0, 10, 1}, 
-    {"Aura Stance", 0, 0, 1},
-    {"Arcane Gambit", 10, 20, 1}
+    {"Psychic", 2, 0, 1}, // 40% chance to stun enemies. stunned enemies will miss (nullify) their next move
+    {"Rejuvenate", 0, 10, 1}, // regen 10hp
+    {"Aura Stance", 0, 0, 1}, // next move after aura stance has a 30% chance to deal 2x damage
+    {"Arcane Gambit", 10, 20, 1} // 50/50 chance to heal 20 hp or deal 10 dmg to yourself
 };
 
 // to add ni xian: status effects (stun and shackle)
