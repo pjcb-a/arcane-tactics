@@ -10,6 +10,7 @@
 
 #define MAX_HP 100
 #define START_ENERGY 2
+#define MAX_HAND_SIZE 10
 #define START_HAND_SIZE 3
 
 typedef struct {
@@ -17,12 +18,13 @@ typedef struct {
     int damage;
     int utility;
     int cost;
+    int priority;
 } Card;
 
 typedef struct {
     int hp;
     int energy;
-    Card hand[5];
+    Card hand[MAX_HAND_SIZE];
     int hand_count;
 } Player;
 

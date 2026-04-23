@@ -21,14 +21,8 @@ int main(int argc, char *argv[]){
         exit(1);
     }
 
-        if (argc < 2) {
-        printf("Usage: %s port_no\n", argv[0]);
-        exit(1);
-    }
-
+    // server initialization
     printf("Server starting ...\n");
-
-    // Socket setup
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock < 0)
         die_with_error("Error: socket() Failed.");
@@ -59,12 +53,11 @@ int main(int argc, char *argv[]){
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
     game.p1_status.hand_count = 0;
-    game.p1_status.dice_roll = 0;
+
 
     game.p2_status.hp = MAX_HP;
     game.p2_status.energy = START_ENERGY;
     game.p2_status.hand_count = 0;
-    game.p2_status.dice_roll = 0;
 
     strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
     
@@ -73,15 +66,15 @@ int main(int argc, char *argv[]){
 
     //communicate
  
+    printf(" %s\n\n", game.message);
         while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
             // Send game state to client
             send(client_sock, &game, sizeof(game), 0);
             
-            printf("Message: %s\n", game.message);
             printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
 
-            printf(" ---- YOUR HAND ---- \n");
+            printf(" \n---- YOUR HAND ---- \n\n");
             for(int i = 0; i < game.p1_status.hand_count; i++) {
             printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                 game.p1_status.hand[i].name,
@@ -91,17 +84,31 @@ int main(int argc, char *argv[]){
             }            
             
             //p1 card move
-            printf("< Select card index to play >>");
+            printf("\n< Select card index to play >>  ");
             int choice;
             scanf("%d", &choice);
 
             //p2 card move
-            printf("Waiting for opponent's move...\n");
+            printf("\nWaiting for opponent's move...\n");
             int p2_choice;
             recv(client_sock, &p2_choice, sizeof(int), 0);
         }
 
-    close(client_sock);
+        // Collect Server Move: Get choice via scanf.
+
+// Collect Client Move: Get p2_choice via recv.
+
+// Push to PQ: Add both choices to your Priority Queue.
+
+// Sort/Process:
+
+//     If Card_Pool[p1_choice].priority > Card_Pool[p2_choice].priority, execute P1's damage first.
+
+//     Update the GameState HP values.
+
+// Broadcast: Send the updated GameState back to the client.
+   
+close(client_sock);
     close(server_sock);
     return 0; 
 }
