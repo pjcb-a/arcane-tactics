@@ -66,48 +66,78 @@ int main(int argc, char *argv[]){
     game.p2_status.hand_count = 0;
 
     strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
-    
+
     draw_card(&game.p1_status, START_HAND_SIZE);
     draw_card(&game.p2_status, START_HAND_SIZE);
 
-    //communicate
- 
+    // Dice roll to determine who goes first
+    int winner = dice_roll(&game.p1_roll, &game.p2_roll);
+
     printf(" %s\n\n", game.message);
+    printf("=== DICE ROLL RESULT ===\n");
+    printf("You (P1) rolled: %d\n", game.p1_roll);
+    printf("Opponent (P2) rolled: %d\n", game.p2_roll);
+    if (winner == 1) {
+        printf("You (P1) go first!\n");
+    } else {
+        printf("Ain't no way opponent goes first!\n"); // Opponent (P2) goes first!
+    }
+    printf("========================\n\n");
 
-        while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
-            // Send game state to client
-            
-            printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
-            printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+    // Send initial game state (including dice roll) to client
+    send(client_sock, &game, sizeof(game), 0);
 
+    while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
+        printf("Your HP: %d, Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+        printf("Opponent HP: %d, Opponent Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
 
-            printf(" \n---- YOUR HAND ---- \n\n");
-            for(int i = 0; i < game.p1_status.hand_count; i++) {
+        printf(" \n---- YOUR HAND ---- \n\n");
+        for(int i = 0; i < game.p1_status.hand_count; i++) {
             printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                 game.p1_status.hand[i].name,
                 game.p1_status.hand[i].damage,
                 game.p1_status.hand[i].utility,
                 game.p1_status.hand[i].cost);
-            }            
-            
-            //P1 card move
+        }
+
+        // Dice winner goes first
+        if (winner == 1) {
+            // P1 (server) goes first
             printf("\n< Select card index to play >>  ");
-           
             fgets(buffer, sizeof(buffer), stdin);
             p1_choice = atoi(buffer);
-            //P2 card move (recieve from client)
+
+            // Receive P2 choice
             printf("\nWaiting for opponent's move...\n");
-            
-            bzero(buffer, 32);
             n = recv(client_sock, &p2_choice, sizeof(int), 0);
-            if (n < 0){
+            if (n < 0) {
                 die_with_error("Error: Client Disconnected...\n");
                 break;
             }
-            p2_choice = atoi(buffer);
+        } else {
+            // P2 (client) goes first - receive their choice first
+            printf("\nWaiting for opponent's move...\n");
+            bzero(buffer, 32);
+            n = recv(client_sock, &p2_choice, sizeof(int), 0);
+            if (n < 0) {
+                die_with_error("Error: Client Disconnected...\n");
+                break;
+            }
 
-            printf("Log: P1 chose %d, P2 chose %d\n", p1_choice, p2_choice);
-        game.p2_status.hp -= 10; 
+            // Now P1 makes choice
+            printf("\n< Select card index to play >>  ");
+            fgets(buffer, sizeof(buffer), stdin);
+            p1_choice = atoi(buffer);
+        }
+
+        printf("Log: P1 chose %d, P2 chose %d\n", p1_choice, p2_choice);
+
+    // TODO: Process cards based on priority                                                                                                                              
+        game.p2_status.hp -= 10;    
+
+
+        // Send updated game state to client at end of each turn
+        send(client_sock, &game, sizeof(game), 0);
     }
 
     // INITIAL CHANGES added a constraint checker for buffer overflow on p1 and p2 choices to be debugged also on client

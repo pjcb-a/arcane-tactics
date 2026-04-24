@@ -50,18 +50,29 @@ int main(int argc,  char *argv[]){
 
     printf("%s\n\n", game.message);
 
+    // Wait for initial game state with dice roll result
+    n = recv(client_sock, &game, sizeof(game), 0);
+    if(n < 0){
+        die_with_error("Error: Server Disconnected...\n");
+        return 1;
+    }
+
+    // Display dice roll result on client side
+    printf("=== DICE ROLL RESULT ===\n");
+    printf("You (P2) rolled: %d\n", game.p2_roll);
+    printf("Opponent (P1) rolled: %d\n", game.p1_roll);
+    if (game.p1_roll > game.p2_roll) {
+        printf("Ain't no way opponent goes first!\n"); //Opponent (P1) goes first!
+    } else {
+        printf("You (P2) go first!\n");
+    }
+    printf("========================\n\n");
 
         while(1) {
 
-            n = recv(client_sock, &game, sizeof(game), 0);
-            if(n < 0){
-                die_with_error("Error: Server Disconnected...\n");
-                break;
-            }
-
             printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
-        
+
             printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
                     printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
@@ -79,6 +90,13 @@ int main(int argc,  char *argv[]){
 
             //opponents move
             printf("Waiting for opponent's move...\n");
+
+            // Receive updated game state from server
+            n = recv(client_sock, &game, sizeof(game), 0);
+            if(n < 0){
+                die_with_error("Error: Server Disconnected...\n");
+                break;
+            }
         }
         
     close(client_sock);

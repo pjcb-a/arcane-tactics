@@ -33,7 +33,7 @@ void die_with_error(char *error_msg){
 
 
 // Dice roll for checking if who goes first.
-void dice_roll(int *p1_roll, int *p2_roll){
+int dice_roll(int *p1_roll, int *p2_roll){
 
     do {
         *p1_roll = (rand() % 6) + 1;

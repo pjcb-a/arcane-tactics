@@ -30,8 +30,8 @@ typedef struct {
 
 // Game state after each turn
 typedef struct {
-    Player p1_status; // Server 
-    Player p2_status; // Client 
+    Player p1_status; // Server
+    Player p2_status; // Client
     char message[256]; // "Combat results", "Your turn", etc.
     int p1_roll;
     int p2_roll;
@@ -39,5 +39,6 @@ typedef struct {
 
 void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
+int dice_roll(int *p1_roll, int *p2_roll);
 
 #endif
