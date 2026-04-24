@@ -26,6 +26,11 @@ typedef struct {
     int energy;
     Card hand[MAX_HAND_SIZE];
     int hand_count;
+    int shield;
+    int aura_active; 
+    int stun_turns; // > 0 then stun
+    int shackle_damage; // > 0 then dmg reduced
+    int shackle_turns; // how many turns
 } Player;
 
 // Game state after each turn
@@ -39,6 +44,7 @@ typedef struct {
 
 void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
+void apply_card_effect(Player *attacker, Player *defender, Card *card); // to apply stun and 
 int dice_roll(int *p1_roll, int *p2_roll);
 
 #endif

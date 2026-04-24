@@ -140,7 +140,25 @@ int main(int argc, char *argv[]){
                 fgets(buffer, sizeof(buffer), stdin);
                 p1_choice = atoi(buffer);
             }
-            // TODO: Process cards based on priority 
+
+            printf("Round %d P1 chose %d, P2 chose %d\n", i, p1_choice, p2_choice);
+            // TODO: Process cards based on priority -- added ni xian
+                    // Get the cards played
+                Card p1_card = Card_Pool[p1_choice - 1];  // -1 because hand is 1-indexed
+                Card p2_card = Card_Pool[p2_choice - 1];
+
+                // Determine turn order based on priority
+                if (p1_card.priority > p2_card.priority) {
+                    apply_card_effect(&game.p1_status, &game.p2_status, &p1_card);
+                    apply_card_effect(&game.p2_status, &game.p1_status, &p2_card);
+                } else {
+                    apply_card_effect(&game.p2_status, &game.p1_status, &p2_card);
+                    apply_card_effect(&game.p1_status, &game.p2_status, &p1_card);
+                }
+
+                // Update status effects at end of turn
+                update_status_effects(&game.p1_status);
+                update_status_effects(&game.p2_status);
             
             // Send updated game state to client at end of each turn
             send(client_sock, &game, sizeof(game), 0);
