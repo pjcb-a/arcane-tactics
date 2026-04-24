@@ -19,7 +19,8 @@ int main(int argc, char *argv[]){
     // Avoid buffer overflows 
     char buffer[32];
     int p1_choice, p2_choice;
-
+    int draw = 0;
+    
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
         exit(1);
@@ -75,21 +76,21 @@ int main(int argc, char *argv[]){
     int winner = dice_roll(&game.p1_roll, &game.p2_roll);
 
     printf(" %s\n\n", game.message);
-    strcpy(game.message, "--- DICE ROLL RESULT ---");
-    printf("%s\n", game.message);
+    printf("--- DICE ROLL RESULT ---");
     printf("You (P1) rolled: %d\n", game.p1_roll);
     printf("Opponent (P2) rolled: %d\n", game.p2_roll);
 
     if (winner == 1) {
         printf("You (P1) go first!\n");
     } else {
-        printf("Ain't no way opponent goes first!\n"); // Opponent (P2) goes first!
+        printf("AIN'T NO WAAAYY, opponent goes first!\n"); // Opponent (P2) goes first!
     }
     printf("------------------------\n\n");
 
     // Send initial game state (including dice roll) to client
     send(client_sock, &game, sizeof(game), 0);
 
+    // Actual loop of the game, the server is both the player and the "game master" !! REMEMBER !! 
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
 
         for(int i = 1; i < game.p1_status.hand_count; i++) {
@@ -142,28 +143,25 @@ int main(int argc, char *argv[]){
             }
 
             printf("Round %d P1 chose %d, P2 chose %d\n", i, p1_choice, p2_choice);
-            // TODO: Process cards based on priority -- added ni xian
-                    // Get the cards played
-                Card p1_card = Card_Pool[p1_choice - 1];  // -1 because hand is 1-indexed
-                Card p2_card = Card_Pool[p2_choice - 1];
 
                 // Determine turn order based on priority
-                if (p1_card.priority > p2_card.priority) {
-                    apply_card_effect(&game.p1_status, &game.p2_status, &p1_card);
-                    apply_card_effect(&game.p2_status, &game.p1_status, &p2_card);
-                } else {
-                    apply_card_effect(&game.p2_status, &game.p1_status, &p2_card);
-                    apply_card_effect(&game.p1_status, &game.p2_status, &p1_card);
-                }
+                // if (game.p1_status.hand->priority > game.p2_status.hand->priority) {
 
-                // Update status effects at end of turn
-                update_status_effects(&game.p1_status);
-                update_status_effects(&game.p2_status);
-            
+            draw++;
+            draw_card(&game.p1_status, draw);
+            draw_card(&game.p2_status, draw);
+
             // Send updated game state to client at end of each turn
             send(client_sock, &game, sizeof(game), 0);
         }
     }
+
+    // TO-DO
+    // 1. fix game logic for the priority card attack
+    // 2. finally add the queue logic
+    // 3. fix polymorphism on each card effect in mechanics 
+    // 4. Card redraw logic when a player has used a card
+    // 5. fix card effects logic
 
 // Push to PQ: Add both choices to your Priority Queue.
 

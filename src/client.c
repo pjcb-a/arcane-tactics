@@ -14,10 +14,10 @@ int main(int argc,  char *argv[]){
     int client_sock,  port_no, n;
     struct sockaddr_in server_addr;
     struct hostent *server;
+    char buffer[32];
+    int p1_choice, p2_choice;
 
     GameState game;
-
-    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <hostname> <port>\n", argv[0]);
@@ -48,20 +48,28 @@ int main(int argc,  char *argv[]){
 
     printf("Connection successful!\n");
 
-    printf("%s\n\n", game.message);
+    //Prep Phase on who gets to start first
+    printf(" %s\n\n", game.message);
+    printf("--- DICE ROLL RESULT ---");
+    printf("You (P1) rolled: %d\n", game.p1_roll);
+    printf("Opponent (P2) rolled: %d\n", game.p2_roll);
+    printf("------------------------\n\n");
 
-
-        while(1) {
-            n = recv(client_sock, &game, sizeof(game), 0);
-            if(n < 0){
+        n = recv(client_sock, &game, sizeof(game), 0);
+        if(n < 0){
                 die_with_error("Error: Server Disconnected...\n");
-                break;
-            }
+        }
 
-            printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
-            printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+    // Actual loop of game based on the values from server 
+        while(1) {
+
+            for(int i = 1; i <= game.p2_status.hand_count;i++){
+                printf("     . . . ROUND %d . . . \n      ---  START ! ---\n\n", i);
+
+                printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+                printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
         
-            printf(" \n---- YOUR HAND ---- \n\n");
+                printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 1; i < game.p2_status.hand_count; i++) {
                     printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                     game.p2_status.hand[i].name,
@@ -72,14 +80,21 @@ int main(int argc,  char *argv[]){
 
             //p2 card move
             printf("\n< Select card index to play >> ");
-            int p2_choice;
-            scanf("%d", &p2_choice);
+            fgets(buffer, sizeof(buffer), stdin);
+            p2_choice = atoi(buffer);
             send(client_sock, &p2_choice, sizeof(int), 0);
 
             //opponents move
             printf("Waiting for opponent's move...\n");
+            bzero(buffer, 32);
+                n = recv(client_sock, buffer, sizeof(int), 0);
+                p2_choice = atoi(buffer);
+                if (n < 0) {
+                    die_with_error("Error: Client Disconnected...\n");
+                    break;
+                }
         }
-        
+    }  
     close(client_sock);
     return 0;
 }
