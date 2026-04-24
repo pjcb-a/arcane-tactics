@@ -60,21 +60,23 @@ int main(int argc, char *argv[]){
     game.p1_status.energy = START_ENERGY;
     game.p1_status.hand_count = 0;
 
-
     game.p2_status.hp = MAX_HP;
     game.p2_status.energy = START_ENERGY;
     game.p2_status.hand_count = 0;
 
-    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
     draw_card(&game.p1_status, START_HAND_SIZE);
     draw_card(&game.p2_status, START_HAND_SIZE);
+
+
+    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
     // Dice roll to determine who goes first
     int winner = dice_roll(&game.p1_roll, &game.p2_roll);
 
     printf(" %s\n\n", game.message);
-    printf("--- DICE ROLL RESULT ---\n");
+    strcpy(game.message, "--- DICE ROLL RESULT ---");
+    printf("%s\n", game.message);
     printf("You (P1) rolled: %d\n", game.p1_roll);
     printf("Opponent (P2) rolled: %d\n", game.p2_roll);
 
@@ -138,8 +140,6 @@ int main(int argc, char *argv[]){
                 fgets(buffer, sizeof(buffer), stdin);
                 p1_choice = atoi(buffer);
             }
-
-            printf("Round %d P1 chose %d, P2 chose %d\n", i, p1_choice, p2_choice);
             // TODO: Process cards based on priority 
             
             // Send updated game state to client at end of each turn

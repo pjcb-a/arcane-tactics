@@ -62,7 +62,7 @@ int main(int argc,  char *argv[]){
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
         
             printf(" \n---- YOUR HAND ---- \n\n");
-                for(int i = 0; i < game.p2_status.hand_count; i++) {
+                for(int i = 1; i < game.p2_status.hand_count; i++) {
                     printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                     game.p2_status.hand[i].name,
                     game.p2_status.hand[i].damage,
