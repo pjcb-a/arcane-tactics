@@ -43,6 +43,7 @@ void dice_roll(int *p1_roll, int *p2_roll){
     return (*p1_roll > *p2_roll) ? 1 : 2;
 }
 
+
 // the random card giver function to each player at the start of the game and when they draw cards
 void draw_card(Player *player, int num_cards) {
 

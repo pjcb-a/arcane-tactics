@@ -16,6 +16,10 @@ int main(int argc, char *argv[]){
     int server_sock, client_sock, port_no, client_size, n;
     struct sockaddr_in server_addr, client_addr;
 
+    // Avoid buffer overflows 
+    char buffer[32];
+    int p1_choice, p2_choice;
+
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
         exit(1);
@@ -73,9 +77,6 @@ int main(int argc, char *argv[]){
         while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
             // Send game state to client
             
-            if (send(client_sock, &game, sizeof(game), 0))
-                die_with_error("Error: send() Failed.");
-            
             printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
             printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
 
@@ -91,23 +92,25 @@ int main(int argc, char *argv[]){
             
             //P1 card move
             printf("\n< Select card index to play >>  ");
-            int p1_choice;
-            scanf("%d", &p1_choice);
-
+           
+            fgets(buffer, sizeof(buffer), stdin);
+            p1_choice = atoi(buffer);
             //P2 card move (recieve from client)
             printf("\nWaiting for opponent's move...\n");
-            int p2_choice;
-
+            
+            bzero(buffer, 32);
             n = recv(client_sock, &p2_choice, sizeof(int), 0);
             if (n < 0){
                 die_with_error("Error: Client Disconnected...\n");
                 break;
             }
+            p2_choice = atoi(buffer);
 
             printf("Log: P1 chose %d, P2 chose %d\n", p1_choice, p2_choice);
         game.p2_status.hp -= 10; 
     }
 
+    // INITIAL CHANGES added a constraint checker for buffer overflow on p1 and p2 choices to be debugged also on client
 
 // Push to PQ: Add both choices to your Priority Queue.
 
