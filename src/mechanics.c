@@ -83,10 +83,10 @@ int get_stun(Player *player) {
 
 // Apply shackle debuff to target
 // Reduces damage dealt on next attack by specified amount
-void set_shackle(Player *target, int reduction) {
+void set_shackle(Player *target) {
     target->shackle_turns = 1;
-    target->shackle_damage = reduction;
-    printf("Status: Opponent is shackled! Damage reduced by %d on next attack.\n", reduction);
+    target->shackle_damage = 8;
+    printf("Status: Opponent is shackled! Damage reduced by %d on next attack.\n", target->shackle_damage);
 }
 
 int get_shackle(Player *player) {
@@ -96,6 +96,7 @@ int get_shackle(Player *player) {
     }
     return 0;
 }
+
 
 //Apply aura buff 50/50 chance to crit dmg
 void set_aura(Player *player, int damage) {
@@ -115,8 +116,13 @@ float get_aura(Player *player){
     return 1.0f;
 } 
 
-// // APPLYING CARD EFFECT TO TARGET
-// void apply_card_effect(Card card) {
-   
+void check_priority(Card *card1, Card *card2){
+    
+}
 
-// }
+// // APPLYING CARD EFFECT TO TARGET
+void card_move(Player *player,Card card) {
+    printf("\n --- %s uses %s ---", &player, &card.name);
+
+    
+}

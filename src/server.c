@@ -143,9 +143,7 @@ int main(int argc, char *argv[]){
             }
 
             printf("Round %d P1 chose %d, P2 chose %d\n", i, p1_choice, p2_choice);
-
-                // Determine turn order based on priority
-                // if (game.p1_status.hand->priority > game.p2_status.hand->priority) {
+            send(client_sock, &game, sizeof(game), 0);
 
             draw++;
             draw_card(&game.p1_status, draw);
@@ -157,11 +155,11 @@ int main(int argc, char *argv[]){
     }
 
     // TO-DO
-    // 1. fix game logic for the priority card attack
-    // 2. finally add the queue logic
-    // 3. fix polymorphism on each card effect in mechanics 
-    // 4. Card redraw logic when a player has used a card
-    // 5. fix card effects logic
+    // 1. fix game logic for the priority card attack   -- ?  function : constraint
+    // 2. finally add the queue logic   -- ? struct : logic in server function 
+    // 3. send update of card used to client   -- fix send and recv sockets
+    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
+    // 5. fix card effects logic -- connect and -- ? logic : function
 
 // Push to PQ: Add both choices to your Priority Queue.
 
