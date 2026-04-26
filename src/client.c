@@ -48,29 +48,46 @@ int main(int argc,  char *argv[]){
 
     printf("Connection successful!\n");
 
-    //Prep Phase on who gets to start first
-    printf(" %s\n\n", game.message);
-    printf("--- DICE ROLL RESULT ---");
-    printf("You (P1) rolled: %d\n", game.p1_roll);
-    printf("Opponent (P2) rolled: %d\n", game.p2_roll);
-    printf("------------------------\n\n");
 
+
+
+
+// Recieve game state of the dice roll from server
         n = recv(client_sock, &game, sizeof(game), 0);
         if(n < 0){
                 die_with_error("Error: Server Disconnected...\n");
         }
 
-    // Actual loop of game based on the values from server 
+    // 1. PREPARATION PHASE -- Dice roll to determine who goes first
+    printf(game.message);
+    printf("--- DICE ROLL RESULT ---");
+    printf("You (P1) rolled: %d\n", game.p1_roll);
+    printf("Opponent (P2) rolled: %d\n", game.p2_roll);
+    printf("------------------------\n\n");
+
+        if(game.p2_roll > game.p1_roll) {
+            printf("Tou (P2) go first!\n");
+        } else {
+            printf("AIN'T NO WAAAYY, opponent goes first!\n");
+        }
+
+    // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
+                n = recv(client_sock, &game, size_of(game), 0);
+                if(n < 0){
+                    die_with_error("Error: Server Disconnected...\n");
+                    break;
+                }
 
-            for(int i = 1; i <= game.p2_status.hand_count;i++){
-                printf("     . . . ROUND %d . . . \n      ---  START ! ---\n\n", i);
+                printf("\n------------------------------------\n");
+                printf( "%s", game.message);
+                printf("\n------------------------------------\n");
 
-                printf("Your HP: %d, Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
-                printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+                printf("Your HP: %d,   Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+                printf("Opponent HP: %d,   Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
         
                 printf(" \n---- YOUR HAND ---- \n\n");
-                for(int i = 1; i <= game.p2_status.hand_count; i++) {
+                for(int i = 0; i < game.p2_status.hand_count; i++) {
                     printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
                     game.p2_status.hand[i].name,
                     game.p2_status.hand[i].damage,
@@ -78,23 +95,16 @@ int main(int argc,  char *argv[]){
                     game.p2_status.hand[i].cost);
             }
 
-            //p2 card move
             printf("\n< Select card index to play >> ");
             fgets(buffer, sizeof(buffer), stdin);
-            p2_choice = atoi(buffer);
+            p2_choice = buffer;
             send(client_sock, &p2_choice, sizeof(int), 0);
-
-            //opponents move
+        
             printf("Waiting for opponent's move...\n");
-            bzero(buffer, 32);
-                n = recv(client_sock, buffer, sizeof(int), 0);
-                p2_choice = atoi(buffer);
-                if (n < 0) {
-                    die_with_error("Error: Client Disconnected...\n");
-                    break;
-                }
+            printf("Waiting for server to process turn...\n");
+
         }
-    }  
+
     close(client_sock);
     return 0;
 }

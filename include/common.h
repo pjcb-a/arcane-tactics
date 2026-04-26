@@ -44,7 +44,7 @@ typedef struct {
 
 void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
-void apply_card_effect(Player *attacker, Player *defender, Card *card); // to apply stun and 
+void card_move(Player *player, Card card);// to apply stun and 
 int dice_roll(int *p1_roll, int *p2_roll);
 
 #endif

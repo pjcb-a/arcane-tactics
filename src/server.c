@@ -19,7 +19,7 @@ int main(int argc, char *argv[]){
     // Avoid buffer overflows 
     char buffer[32];
     int p1_choice, p2_choice;
-    int draw = 0;
+    int round_num = 1;
     
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <port>\n", argv[0]);
@@ -66,46 +66,48 @@ int main(int argc, char *argv[]){
     game.p2_status.hand_count = 0;
 
 
-    draw_card(&game.p1_status, START_HAND_SIZE);
-    draw_card(&game.p2_status, START_HAND_SIZE);
-
-
-    strcpy(game.message, "Welcome to Arcane Tactics! Match Initiated.");
-
-    // Dice roll to determine who goes first
+    // 1. PREPARATION PHASE -- Dice roll to determine who goes first
     int winner = dice_roll(&game.p1_roll, &game.p2_roll);
 
-    printf(" %s\n\n", game.message);
+    sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
     printf("--- DICE ROLL RESULT ---");
     printf("You (P1) rolled: %d\n", game.p1_roll);
     printf("Opponent (P2) rolled: %d\n", game.p2_roll);
+    printf("------------------------\n\n");
+
+    // Send dice roll status to client
+    send(client_sock, &game, sizeof(game), 0);
 
     if (winner == 1) {
         printf("You (P1) go first!\n");
     } else {
         printf("AIN'T NO WAAAYY, opponent goes first!\n"); // Opponent (P2) goes first!
     }
-    printf("------------------------\n\n");
 
-    // Send initial game state (including dice roll) to client
-    send(client_sock, &game, sizeof(game), 0);
 
-    // Actual loop of the game, the server is both the player and the "game master" !! REMEMBER !! 
+    draw_card(&game.p1_status, START_HAND_SIZE);
+    draw_card(&game.p2_status, START_HAND_SIZE);
+
+    // 2. GAME PHASE -- Actual loop of the game, the server is both the player and the "game master" !! REMEMBER !! 
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
+            printf("\n------------------------------------\n");
+            printf( "  - - - ROUND %d - - - START! - - -  ", round_num);
+            printf("\n------------------------------------\n");
 
-        for(int i = 1; i < game.p1_status.hand_count; i++) {
-            printf("     . . . ROUND %d . . . \n      ---  START ! ---\n\n", i);
-            
-            printf("Your HP: %d, Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
-            printf("Opponent HP: %d, Opponent Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+            //Send the round also to client
+            sprintf(game.message, "  - - - ROUND %d - - - START! - - -  ", round_num);
+            send(client_sock, &game, sizeof(game), 0);
+
+            printf("Your HP: %d,   Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+            printf("Opponent HP: %d,   Opponent Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
 
             printf(" \n---- YOUR HAND ---- \n\n");
-            for(int j = 1; j <= game.p1_status.hand_count; j++) {
-                printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", j,
-                    game.p1_status.hand[j].name,
-                    game.p1_status.hand[j].damage,
-                    game.p1_status.hand[j].utility,
-                    game.p1_status.hand[j].cost);
+            for(int i = 0; i < game.p1_status.hand_count; i++) {
+                printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
+                    game.p1_status.hand[i].name,
+                    game.p1_status.hand[i].damage,
+                    game.p1_status.hand[i].utility,
+                    game.p1_status.hand[i].cost);
             }
 
             // Dice winner goes first
@@ -113,13 +115,13 @@ int main(int argc, char *argv[]){
                 // P1 (server) goes first
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer);
+                p1_choice = buffer;
 
                 // Receive P2 choice
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
-                n = recv(client_sock, buffer, sizeof(int), 0);
-                p2_choice = atoi(buffer);
+                n = recv(client_sock, buffer, sizeof(buffer), 0);
+                p2_choice = buffer;
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
@@ -129,8 +131,8 @@ int main(int argc, char *argv[]){
                 // P2 (client) goes first - receive their choice first
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
-                n = recv(client_sock, buffer, sizeof(int), 0);
-                p2_choice = atoi(buffer);
+                n = recv(client_sock, buffer, sizeof(buffer), 0);
+                p2_choice = buffer;
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
@@ -139,37 +141,31 @@ int main(int argc, char *argv[]){
                 // Now P1 makes choice
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer);
+                p1_choice = buffer;
             }
 
-            printf("Round %d P1 chose %d, P2 chose %d\n", i, p1_choice, p2_choice);
-            send(client_sock, &game, sizeof(game), 0);
+            // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
+            sprintf(game.message, "Round %d CARDS DRAWN: P1 chose [%s], P2 chose [%s]", 
+                round_num, 
+                game.p1_status.hand->name, 
+                game.p2_status.hand->name);
 
-            draw++;
-            draw_card(&game.p1_status, draw);
-            draw_card(&game.p2_status, draw);
 
-            // Send updated game state to client at end of each turn
-            send(client_sock, &game, sizeof(game), 0);
+            //PRIORITY QUEUE OF CARDS HERE
+
+            draw_card(&game.p1_status, 1);
+            draw_card(&game.p2_status, 1);
+            round_num++;
+
         }
-    }
+    
 
     // TO-DO
     // 1. fix game logic for the priority card attack   -- ?  function : constraint
     // 2. finally add the queue logic   -- ? struct : logic in server function 
-    // 3. send update of card used to client   -- fix send and recv sockets
+    // 3. send update of card used to client   -- fix send and recv sockets - ONGOING
     // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
     // 5. fix card effects logic -- connect and -- ? logic : function
-
-// Push to PQ: Add both choices to your Priority Queue.
-
-// Sort/Process:
-
-//     If Card_Pool[p1_choice].priority > Card_Pool[p2_choice].priority, execute P1's damage first.
-
-//     Update the GameState HP values.
-
-// Broadcast: Send the updated GameState back to the client.
    
 close(client_sock);
     close(server_sock);
