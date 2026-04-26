@@ -49,7 +49,7 @@ int main(int argc, char *argv[]){
     if (client_sock < 0)
         die_with_error("Error: accept() Failed.");
 
-    printf("Client successfully connected ...\n\n");
+    printf("Client successfully connected ...\n");
 
     GameState game;
     memset(&game, 0, sizeof(GameState));
@@ -70,7 +70,9 @@ int main(int argc, char *argv[]){
     int winner = dice_roll(&game.p1_roll, &game.p2_roll);
 
     sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
-    printf("--- DICE ROLL RESULT ---");
+
+    printf("\n%s\n", game.message);
+    printf("\n--- DICE ROLL RESULT ---\n");
     printf("You (P1) rolled: %d\n", game.p1_roll);
     printf("Opponent (P2) rolled: %d\n", game.p2_roll);
     printf("------------------------\n\n");
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]){
     if (winner == 1) {
         printf("You (P1) go first!\n");
     } else {
-        printf("AIN'T NO WAAAYY, opponent goes first!\n"); // Opponent (P2) goes first!
+        printf("AIN'T NO WAAAYY, opponent goes first!\n"); 
     }
 
 
@@ -102,12 +104,14 @@ int main(int argc, char *argv[]){
             printf("Opponent HP: %d,   Opponent Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
 
             printf(" \n---- YOUR HAND ---- \n\n");
+            int j = 1;
             for(int i = 0; i < game.p1_status.hand_count; i++) {
-                printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", i,
+                printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", j,
                     game.p1_status.hand[i].name,
                     game.p1_status.hand[i].damage,
                     game.p1_status.hand[i].utility,
                     game.p1_status.hand[i].cost);
+                    j++;
             }
 
             // Dice winner goes first
@@ -115,13 +119,13 @@ int main(int argc, char *argv[]){
                 // P1 (server) goes first
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = buffer;
+                p1_choice = atoi(buffer);
 
                 // Receive P2 choice
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
                 n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = buffer;
+                p2_choice = atoi(buffer);
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
@@ -132,7 +136,7 @@ int main(int argc, char *argv[]){
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
                 n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = buffer;
+                p2_choice = atoi(buffer);
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
@@ -141,7 +145,7 @@ int main(int argc, char *argv[]){
                 // Now P1 makes choice
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = buffer;
+                p1_choice = atoi(buffer);
             }
 
             // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
@@ -150,9 +154,24 @@ int main(int argc, char *argv[]){
                 game.p1_status.hand->name, 
                 game.p2_status.hand->name);
 
-
+            printf("%s\n", game.message);
+            
             //PRIORITY QUEUE OF CARDS HERE
+            
+            // Declaration of queues
+            ActionQueue firstRoll;
+            ActionQueue secondRoll;
+            init_queue(&firstRoll, 10);
+            init_queue(&secondRoll, 10);
 
+            Action p1_action = {1, game.p1_status.hand[p1_choice]}; 
+            Action p2_action = {1, game.p2_status.hand[p2_choice]}; 
+
+            // PLACE ENQUEUE OF P1 and P2 HERE !!
+            // Then after combat phase ends, dequeue the used card and draw 1 card.
+           
+            game.p1_status.hand_count--;
+            game.p2_status.hand_count--;
             draw_card(&game.p1_status, 1);
             draw_card(&game.p2_status, 1);
             round_num++;

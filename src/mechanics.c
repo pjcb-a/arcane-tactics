@@ -116,13 +116,149 @@ float get_aura(Player *player){
     return 1.0f;
 } 
 
-void check_priority(Card *card1, Card *card2){
-    
-}
 
 // // APPLYING CARD EFFECT TO TARGET
-void card_move(Player *player,Card card) {
-    printf("\n --- %s uses %s ---", &player, &card.name);
 
-    
+
+
+// ===================== CARD QUEUE LOGIC ==========================
+
+void init_queue(ActionQueue *queue, int size) {
+    queue->size = size;
+    queue->front = queue->rear = -1;
 }
+
+int is_empty(ActionQueue *q) {
+    if (q->front == -1 && q->rear == -1) {
+        return 1;
+    }
+    return 0;
+}
+
+int is_full(ActionQueue *q) {
+    if ((q->rear + 1) % q->size == q->front) {
+        return 1;
+    }
+    return 0;
+}
+
+void enqueue(ActionQueue *q, Action data){
+    if(is_full(q)) {
+        printf("Queue is Full\n");
+    }
+
+    if(isEmpty(q)){
+        q->front = q->rear = 0;
+    }
+    else {
+        q->rear = (q->rear + 1) % q->size;
+    }
+
+    q->queue[q->rear] = data;
+}
+
+Action dequeue(ActionQueue *q){
+    Action empty = {0};
+    if(isEmpty(q)){
+        printf("Queue is already empty\n");
+        return empty;
+    }
+
+    Action data = q->queue[q->front];
+    
+    if (q->front == q->rear){
+        q->front = q->rear = -1;
+    }
+    else {
+        q->front = (q->front + 1) % q->size;
+    }
+
+    return data;
+}
+
+// class Queue {
+//     string *queue;
+//     int front, rear, size;
+
+//     public:
+//         Queue(int);
+//         bool isEmpty();
+//         bool isFull();
+//         void enqueue(string);
+//         void dequeue();
+//         string peek();
+//         void display();
+//     };
+
+// Queue::Queue(int s){
+//     size = s;
+//     front = rear = -1;
+//     queue = new string[s];
+// }
+
+// bool Queue::isEmpty(){
+//     if(front == -1 && rear == -1){
+//         return true;
+//     }
+//     else {
+//         return false;
+//     }
+// }
+
+// bool Queue::isFull(){
+//     if((rear + 1) % size == front){
+//         return true;
+//     }
+//     else{
+//         return false;
+//     }
+// }
+
+// void Queue::enqueue(string data){
+//     if(isFull()){
+//         cout << "Queue is already full\n";
+//         return;
+//     }
+
+//     if(isEmpty()){
+//         front = rear = 0;
+//     }
+//     else {
+//         rear = (rear + 1) % size;
+//     }
+
+//     queue[rear] = data;
+// }
+
+// void Queue::dequeue(){
+//     if(isEmpty()){
+//         cout << "Queue is already empty\n";
+//         return;
+//     }
+
+//     else if (front == rear){
+//         front = rear = -1;
+//     }
+//     else {
+//         front = (front + 1) % size;
+//     }
+// }
+
+// string Queue::peek(){
+//     if(isEmpty()){
+//         cout << "Queue is empty\n";
+//         return "";
+//     }
+
+//     return queue[front];
+// }
+
+// void Queue::display(){
+//     int count = (rear + size - front) % size + 1;
+
+//     for(int i = 0; i < count;i++){
+//         int index = (front + i) % size;
+
+//         cout << queue[index] << endl;
+//     }
+// }

@@ -42,9 +42,30 @@ typedef struct {
     int p2_roll;
 } GameState;
 
+// Queue logic for card prio and dmg distribution with DSA source code
+
+// Move to input to the Queue
+typedef struct {
+    int player_id;
+    Card card;
+} Action;
+
+typedef struct {
+    Action queue[10];
+    int front;
+    int rear;
+    int size;
+} ActionQueue;
+
+
 void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
 void card_move(Player *player, Card card);// to apply stun and 
 int dice_roll(int *p1_roll, int *p2_roll);
 
+void init_queue(ActionQueue *q, int size);
+int is_empty(ActionQueue *q);
+int is_full(ActionQueue *q);
+void enqueue(ActionQueue *q, Action data);
+Action dequeue(ActionQueue *q);
 #endif
