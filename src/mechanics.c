@@ -147,7 +147,7 @@ void enqueue(ActionQueue *q, Action data){
         printf("Queue is Full\n");
     }
 
-    if(isEmpty(q)){
+    if(is_empty(q)){
         q->front = q->rear = 0;
     }
     else {
@@ -159,7 +159,7 @@ void enqueue(ActionQueue *q, Action data){
 
 Action dequeue(ActionQueue *q){
     Action empty = {0};
-    if(isEmpty(q)){
+    if(is_empty(q)){
         printf("Queue is already empty\n");
         return empty;
     }
