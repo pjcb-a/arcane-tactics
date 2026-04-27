@@ -60,7 +60,8 @@ typedef struct {
 
 void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
-void card_move(Player *player, Card card);// to apply stun and 
+void execute_card(Player *caster, Player *target, Card card, int is_player);
+void card_move(Player *player, Card card);
 int dice_roll(int *p1_roll, int *p2_roll);
 
 void init_queue(ActionQueue *q, int size);

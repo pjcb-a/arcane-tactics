@@ -19,7 +19,7 @@ int main(int argc,  char *argv[]){
     GameState game;
 
     if (argc < 3) {
-        fprintf(stderr, "Usage: %s <hostname> <port>\n", argv[0]);
+        printf("Usage: %s hostname port_no", argv[0]);
         exit(1);
     }
     //client initialization
@@ -96,9 +96,9 @@ int main(int argc,  char *argv[]){
                     j++;
             }
             if(game.p2_roll > game.p1_roll){
-            printf("\n< Select card index to play >> ");
+            printf("\n< You(P2) go first. Select card index to play >> ");
             } else {
-            printf("\nWaiting for opponent's move...\n");
+            printf("\nOpponent(P1) goes first, Then enter next move >> ");
             }
             //Send updates to server 
             fgets(buffer, sizeof(buffer), stdin);

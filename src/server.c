@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
     int round_num = 1;
     
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <port>\n", argv[0]);
+        printf( "Usage: %s port_no", argv[0]);
         exit(1);
     }
 
@@ -119,13 +119,13 @@ int main(int argc, char *argv[]){
                 // P1 (server) goes first
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer);
+                p1_choice = atoi(buffer) - 1;
 
                 // Receive P2 choice
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
                 n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = atoi(buffer);
+                p2_choice = atoi(buffer) - 1;
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
@@ -136,67 +136,97 @@ int main(int argc, char *argv[]){
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
                 n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = atoi(buffer);
+                p2_choice = atoi(buffer) - 1;
                 if (n < 0) {
                     die_with_error("Error: Client Disconnected...\n");
                     break;
                 }
-
+                
                 // Now P1 makes choice
                 printf("\n< Select card index to play >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer);
+                p1_choice = atoi(buffer) - 1;
             }
-
-            // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
-            sprintf(game.message, "Round %d CARDS DRAWN: P1 chose [%s], P2 chose [%s]", 
-                round_num, 
-                game.p1_status.hand->name, 
-                game.p2_status.hand->name);
-
-            printf("%s\n", game.message);
             
+            
+            // EXECUTION PHASE: Empty the VIP queue first, then the regular queue
             //PRIORITY QUEUE OF CARDS HERE
             
             // Declaration of queues
-            ActionQueue firstRoll;
-            ActionQueue secondRoll;
-            init_queue(&firstRoll, 10);
-            init_queue(&secondRoll, 10);
-
-            Action p1_action = {1, game.p1_status.hand[p1_choice]}; 
-            Action p2_action = {2, game.p2_status.hand[p2_choice]}; 
-
+            ActionQueue priority_queue;
+            ActionQueue regular_queue;
+            init_queue(&priority_queue, 10);
+            init_queue(&regular_queue, 10);
+            
+            Action p1_action = {1, game.p1_status.hand[p1_choice - 1]}; 
+            Action p2_action = {2, game.p2_status.hand[p2_choice - 1]}; 
+            
+            // Energy withdrawal after every move.
+            game.p1_status.energy -= p1_action.card.cost;
+            game.p2_status.energy -= p2_action.card.cost;
+            
             // PLACE ENQUEUE OF P1 and P2 HERE !!
-            // Then after combat phase ends, dequeue the used card and draw 1 card.
-
-            while( game.p1_status.energy > 0 || game.p2_status.energy > 0 || game.p1_status.energy < game.p1_status.hand_count || game.p2_status.energy < game.p2_status.hand_count ) {
+            if(p1_action.card.priority == 1) {
+                enqueue(&priority_queue, p1_action);
+            } else {
+                enqueue(&regular_queue, p1_action);
+            }
+            
+            if(p2_action.card.priority == 1) {
+                enqueue(&priority_queue, p2_action);
+            } else {
+                enqueue(&regular_queue, p2_action);
+            }
+            
+            // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
+            // Then after combat phase ends, dequeue the used card and draw 1 card and minus the energy of the card from the energt of player.
+            printf("\n------- COMBAT RESOLUTION -------\n");
+            for (int j = 0; j < 2; j++) {
+                Action current_move;
                 
-                if(game.p1_status.hand->priority == 0 || game.p2_status.hand->priority == 0){
-                    enqueue(&firstRoll, p1_action);
-                    enqueue(&firstRoll, p2_action);
+                if (!is_empty(&priority_queue)) {
+                    current_move = dequeue(&priority_queue);
+                } else if (!is_empty(&regular_queue)) {
+                    current_move = dequeue(&regular_queue);
+                    } else {
+                        break; // Protection / para may else statement lang sa nested-if XD
+                    }
+
+                    // Call the execute_card function where the effect and dmg happens.
+                    if (current_move.player_id == 1) {
+                        execute_card(&game.p1_status, &game.p2_status, current_move.card, 1);
+                    } else {
+                        execute_card(&game.p2_status, &game.p1_status, current_move.card, 0);
+                    }
                 }
-                else {
-                    enqueue(&secondRoll, p1_action);
-                    enqueue(&secondRoll, p2_action);
-                }
+
+                // Update the client !!
+                sprintf(game.message, "Round %d: P1 used %s, P2 used %s", 
+                    round_num, p1_action.card.name, p2_action.card.name);
+
+
+            // 4. RELAPSE PHASE / INITIALIZE FOR NEXT ROUND OF STATS
+            // For a basic setup, we'll just reset hand and redraw to keep it simple
+            game.p1_status.hand_count = 0;
+            game.p2_status.hand_count = 0;
+            draw_card(&game.p1_status, START_HAND_SIZE);
+            draw_card(&game.p2_status, START_HAND_SIZE);
+            
+            round_num++;
+            game.p1_status.energy += 1; // Passive energy regen per round
+            game.p2_status.energy += 1;
+
+            send(client_sock, &game, sizeof(game), 0);
             }
 
-            game.p1_status.hand_count--;
-            game.p2_status.hand_count--;
-            draw_card(&game.p1_status, 1);
-            draw_card(&game.p2_status, 1);
-            round_num++;
-
-        }
-    
 
     // TO-DO
     // 1. fix game logic for the priority card attack   -- ?  function : constraint
-    // 2. shield logic -- medj done
+    // 2. FIX client sided response of the last two phases from server. . .
     // 3. send update of card used to client   -- fix send and recv sockets - ONGOING
     // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
-    // 5. fix card effects logic -- connect and -- ? logic : function
+    // 5. ENERGY BUG 
+    // 6. debug system
    
 close(client_sock);
     close(server_sock);
