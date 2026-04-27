@@ -176,6 +176,17 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
     }
 }
 
+// Removes a card from hand, shifts remaining cards left
+void remove_card(Player *player, int card_index) {
+    if (card_index < 0 || card_index >= player->hand_count) {
+        return;
+    }
+    for (int i = card_index; i < player->hand_count - 1; i++) {
+        player->hand[i] = player->hand[i + 1];
+    }
+    player->hand_count--;
+}
+
 // ------------------= CARD QUEUE LOGIC ----------------------
 
 void init_queue(ActionQueue *queue, int size) {

@@ -206,11 +206,19 @@ int main(int argc, char *argv[]){
 
 
             // 4. RELAPSE PHASE / INITIALIZE FOR NEXT ROUND OF STATS
-            // For a basic setup, we'll just reset hand and redraw to keep it simple
-            game.p1_status.hand_count = 0;
-            game.p2_status.hand_count = 0;
-            draw_card(&game.p1_status, START_HAND_SIZE);
-            draw_card(&game.p2_status, START_HAND_SIZE);
+            // For a basic setup, we'll just reset hand and redraw to keep it simple                                                                                                                                                            
+            // game.p1_status.hand_count = 0;                                                                                                                                                                                                      
+            // game.p2_status.hand_count = 0;                                                                                                                                                                                                    
+            // draw_card(&game.p1_status, START_HAND_SIZE);                                                                                                                                                                                      
+            // draw_card(&game.p2_status, START_HAND_SIZE);
+
+            // Remove played cards from hand, then draw replacement cards
+            remove_card(&game.p1_status, p1_choice);
+            remove_card(&game.p2_status, p2_choice);
+
+            // Draw replacement cards (1 each)
+            draw_card(&game.p1_status, 1);
+            draw_card(&game.p2_status, 1);
             
             round_num++;
             game.p1_status.energy += 1; // Passive energy regen per round
