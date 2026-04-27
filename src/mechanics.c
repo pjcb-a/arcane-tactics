@@ -116,10 +116,22 @@ float get_aura(Player *player){
     return 1.0f;
 } 
 
+void set_shield(Player *player, int shield) {
+        player->shield = 1;
+        printf("Status: Shield activated!.");
+}
 
-// // APPLYING CARD EFFECT TO TARGET
+int get_shield(Player *player) {
+    if (player->shield > 0) {
+        player->shield = 0;
+        return player->hp + player->shield;
+    }
+    return 0;
+}
 
+// APPLYING CARD EFFECT TO TARGET
 
+// PLACE THAT SHT HERE
 
 // ===================== CARD QUEUE LOGIC ==========================
 
@@ -175,90 +187,3 @@ Action dequeue(ActionQueue *q){
 
     return data;
 }
-
-// class Queue {
-//     string *queue;
-//     int front, rear, size;
-
-//     public:
-//         Queue(int);
-//         bool isEmpty();
-//         bool isFull();
-//         void enqueue(string);
-//         void dequeue();
-//         string peek();
-//         void display();
-//     };
-
-// Queue::Queue(int s){
-//     size = s;
-//     front = rear = -1;
-//     queue = new string[s];
-// }
-
-// bool Queue::isEmpty(){
-//     if(front == -1 && rear == -1){
-//         return true;
-//     }
-//     else {
-//         return false;
-//     }
-// }
-
-// bool Queue::isFull(){
-//     if((rear + 1) % size == front){
-//         return true;
-//     }
-//     else{
-//         return false;
-//     }
-// }
-
-// void Queue::enqueue(string data){
-//     if(isFull()){
-//         cout << "Queue is already full\n";
-//         return;
-//     }
-
-//     if(isEmpty()){
-//         front = rear = 0;
-//     }
-//     else {
-//         rear = (rear + 1) % size;
-//     }
-
-//     queue[rear] = data;
-// }
-
-// void Queue::dequeue(){
-//     if(isEmpty()){
-//         cout << "Queue is already empty\n";
-//         return;
-//     }
-
-//     else if (front == rear){
-//         front = rear = -1;
-//     }
-//     else {
-//         front = (front + 1) % size;
-//     }
-// }
-
-// string Queue::peek(){
-//     if(isEmpty()){
-//         cout << "Queue is empty\n";
-//         return "";
-//     }
-
-//     return queue[front];
-// }
-
-// void Queue::display(){
-//     int count = (rear + size - front) % size + 1;
-
-//     for(int i = 0; i < count;i++){
-//         int index = (front + i) % size;
-
-//         cout << queue[index] << endl;
-//     }
-// }

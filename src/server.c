@@ -165,11 +165,23 @@ int main(int argc, char *argv[]){
             init_queue(&secondRoll, 10);
 
             Action p1_action = {1, game.p1_status.hand[p1_choice]}; 
-            Action p2_action = {1, game.p2_status.hand[p2_choice]}; 
+            Action p2_action = {2, game.p2_status.hand[p2_choice]}; 
 
             // PLACE ENQUEUE OF P1 and P2 HERE !!
             // Then after combat phase ends, dequeue the used card and draw 1 card.
-           
+
+            while( game.p1_status.energy > 0 || game.p2_status.energy > 0 || game.p1_status.energy < game.p1_status.hand_count || game.p2_status.energy < game.p2_status.hand_count ) {
+                
+                if(game.p1_status.hand->priority == 0 || game.p2_status.hand->priority == 0){
+                    enqueue(&firstRoll, p1_action);
+                    enqueue(&firstRoll, p2_action);
+                }
+                else {
+                    enqueue(&secondRoll, p1_action);
+                    enqueue(&secondRoll, p2_action);
+                }
+            }
+
             game.p1_status.hand_count--;
             game.p2_status.hand_count--;
             draw_card(&game.p1_status, 1);
@@ -181,7 +193,7 @@ int main(int argc, char *argv[]){
 
     // TO-DO
     // 1. fix game logic for the priority card attack   -- ?  function : constraint
-    // 2. finally add the queue logic   -- ? struct : logic in server function 
+    // 2. shield logic -- medj done
     // 3. send update of card used to client   -- fix send and recv sockets - ONGOING
     // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
     // 5. fix card effects logic -- connect and -- ? logic : function
