@@ -235,6 +235,14 @@ int main(int argc, char *argv[]){
     // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement and bugs 
     // 5. ENERGY BUG 
     // 6. debug game
+
+        // AS OF APRIL 28, 10AM
+    // 1. move na ginamit is -1 index sa input
+    // 2. client has no combat resolution
+    // 3. energy is bugged, presents as negative
+    // 4. bugged combat resolution, cant fetch moves used
+    // 5. damage bugged, not reflecting properly
+    // 6. (!) better ui
    
 close(client_sock);
     close(server_sock);
