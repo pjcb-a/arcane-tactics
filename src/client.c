@@ -67,7 +67,7 @@ int main(int argc,  char *argv[]){
         if(game.p2_roll > game.p1_roll) {
             printf("You (P2) go first!\n");
         } else {
-            printf("AIN'T NO WAAAYY, opponent goes first!\n");
+            printf("AIN'T NO WAAAYY, opponent (P1) goes first!\n");
         }
 
     // 2. GAME PHASE -- Display of cards and start of round 
