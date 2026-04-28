@@ -54,8 +54,6 @@ int main(int argc, char *argv[]){
     GameState game;
     memset(&game, 0, sizeof(GameState));
 
-    Player p1; //Server
-    Player p2; //Client
     // Initialize game state for both players (server and client)
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
@@ -90,7 +88,7 @@ int main(int argc, char *argv[]){
     draw_card(&game.p1_status, START_HAND_SIZE);
     draw_card(&game.p2_status, START_HAND_SIZE);
 
-    // 2. GAME PHASE -- Actual loop of the game, the server is both the player and the "game master" !! REMEMBER !! 
+    // 2. GAME PHASE -- Actual loop of the game
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
             printf("\n------------------------------------\n");
             printf( "  - - - ROUND %d - - - START! - - -  ", round_num);
@@ -114,149 +112,160 @@ int main(int argc, char *argv[]){
                     j++;
             }
 
-            // Dice winner goes first
-            if (winner == 1) {
-                // P1 (server) goes first
-                printf("\n< Select card index to play >>  ");
+            // === NEW: CONTINUOUS AFFORDABILITY CHECK PHASE ===
+            
+            // P1 (Server) Input Validation Loop
+            int p1_valid = 0;
+            while (!p1_valid) {
+                printf("\n< Select card index (0 to Skip) >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
                 p1_choice = atoi(buffer) - 1;
 
-                // Receive P2 choice
-                printf("\nWaiting for opponent's move...\n");
-                bzero(buffer, 32);
-                n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = atoi(buffer) - 1;
-                if (n < 0) {
-                    die_with_error("Error: Client Disconnected...\n");
-                    break;
+                if (p1_choice == -1) {
+                    p1_valid = 1; // Skip is always valid
+                } else if (p1_choice >= 0 && p1_choice < game.p1_status.hand_count) {
+                    if (game.p1_status.hand[p1_choice].cost <= game.p1_status.energy) {
+                        p1_valid = 1;
+                    } else {
+                        printf("[!] Not enough energy! %s costs %d.\n", 
+                            game.p1_status.hand[p1_choice].name, game.p1_status.hand[p1_choice].cost);
+                    }
+                } else {
+                    printf("[!] Invalid choice. Try again.\n");
                 }
-
-            } else {
-                // P2 (client) goes first - receive their choice first
-                printf("\nWaiting for opponent's move...\n");
-                bzero(buffer, 32);
-                n = recv(client_sock, buffer, sizeof(buffer), 0);
-                p2_choice = atoi(buffer) - 1;
-                if (n < 0) {
-                    die_with_error("Error: Client Disconnected...\n");
-                    break;
-                }
-                
-                // Now P1 makes choice
-                printf("\n< Select card index to play >>  ");
-                fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer) - 1;
             }
+
+            // P2 (Client) Input Validation Loop
+            int p2_valid = 0;
+            while (!p2_valid) {
+                printf("\nWaiting for opponent's move...\n");
+                bzero(buffer, 32);
+                n = recv(client_sock, buffer, sizeof(buffer), 0);
+                if (n < 0) {
+                    die_with_error("Error: Client Disconnected...\n");
+                    break;
+                }
+                p2_choice = atoi(buffer) - 1;
+
+                // Validate P2's energy server-side
+                if (p2_choice == -1) {
+                    p2_valid = 1;
+                    send(client_sock, "OK", 3, 0); // Inform client move accepted
+                } else if (p2_choice >= 0 && p2_choice < game.p2_status.hand_count) {
+                    if (game.p2_status.hand[p2_choice].cost <= game.p2_status.energy) {
+                        p2_valid = 1;
+                        send(client_sock, "OK", 3, 0); 
+                    } else {
+                        send(client_sock, "RETRY", 6, 0); // Client must prompt again
+                    }
+                } else {
+                    send(client_sock, "RETRY", 6, 0);
+                }
+            }
+            // === END NEW ===
             
-            
-            // EXECUTION PHASE: Empty the VIP queue first, then the regular queue
-            //PRIORITY QUEUE OF CARDS HERE
-            
-            // Declaration of queues
+            // EXECUTION PHASE
             ActionQueue priority_queue;
             ActionQueue regular_queue;
             init_queue(&priority_queue, 10);
             init_queue(&regular_queue, 10);
             
-            Action p1_action = {1, game.p1_status.hand[p1_choice]}; 
-            Action p2_action = {2, game.p2_status.hand[p2_choice]}; 
-            
-            // Energy withdrawal after every move.
-            game.p1_status.energy -= p1_action.card.cost;
-            game.p2_status.energy -= p2_action.card.cost;
-            
-            // PLACE ENQUEUE OF P1 and P2 HERE !!
-            if(p1_action.card.priority == 1) {
-                enqueue(&priority_queue, p1_action);
+            // === NEW: CONVERT CHOICES TO ACTIONS WITH SKIP LOGIC ===
+            Action p1_action, p2_action;
+            p1_action.player_id = 1;
+            p2_action.player_id = 2;
+
+            if (p1_choice == -1) {
+                Card skip = {"Skip", 0, 0, 0, 0};
+                p1_action.card = skip;
             } else {
-                enqueue(&regular_queue, p1_action);
+                p1_action.card = game.p1_status.hand[p1_choice];
+                game.p1_status.energy -= p1_action.card.cost;
+            }
+
+            if (p2_choice == -1) {
+                Card skip = {"Skip", 0, 0, 0, 0};
+                p2_action.card = skip;
+            } else {
+                p2_action.card = game.p2_status.hand[p2_choice];
+                game.p2_status.energy -= p2_action.card.cost;
+            }
+            // === END NEW ===
+            
+            // PLACE ENQUEUE
+            if (winner == 1) {
+                if(p1_action.card.priority == 1) enqueue(&priority_queue, p1_action);
+                else enqueue(&regular_queue, p1_action);
+
+                if(p2_action.card.priority == 1) enqueue(&priority_queue, p2_action);
+                else enqueue(&regular_queue, p2_action);
+            } else {
+                if(p2_action.card.priority == 1) enqueue(&priority_queue, p2_action);
+                else enqueue(&regular_queue, p2_action);
+
+                if(p1_action.card.priority == 1) enqueue(&priority_queue, p1_action);
+                else enqueue(&regular_queue, p1_action);
             }
             
-            if(p2_action.card.priority == 1) {
-                enqueue(&priority_queue, p2_action);
-            } else {
-                enqueue(&regular_queue, p2_action);
-            }
-            
-            // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
-            // Then after combat phase ends, dequeue the used card and draw 1 card and minus the energy of the card from the energt of player.
-            char combat_log[2048] = "\n------- COMBAT RESOLUTION -------\n";
+            // 3. CLOSURE PHASE
+            char combat_log[512] = "\n------- COMBAT RESOLUTION -------\n";
 
-            Card p1_card = game.p1_status.hand[p1_choice];
-            Card p2_card = game.p2_status.hand[p2_choice];
-
-            for (int j = 0; j < 2; j++) {
+            for (int k = 0; k < 2; k++) {
                 Action current_move;
-                
                 if (!is_empty(&priority_queue)) {
                     current_move = dequeue(&priority_queue);
                 } else if (!is_empty(&regular_queue)) {
                     current_move = dequeue(&regular_queue);
-                    } else {
-                        break; // Protection / para may else statement lang sa nested-if XD
-                    }
-
-                    // Call the execute_card function where the effect and dmg happens, with log buffer
-                    if (current_move.player_id == 1) {
-                        execute_card(&game.p1_status, &game.p2_status, current_move.card, 1, combat_log);
-                    } else {
-                        execute_card(&game.p2_status, &game.p1_status, current_move.card, 0, combat_log);
-                    }
+                } else {
+                    break;
                 }
 
-                strcpy(game.message, combat_log);
-                send(client_sock, &game, sizeof(game), 0);
-                printf("%s", combat_log);
+                if (current_move.player_id == 1) {
+                    execute_card(&game.p1_status, &game.p2_status, current_move.card, 1, combat_log);
+                } else {
+                    execute_card(&game.p2_status, &game.p1_status, current_move.card, 0, combat_log);
+                }
+            }
 
-                usleep(500000); // Sleep for 0.5 seconds to allow client to receive and print combat log before next round starts
-                // Update the client !!
-                // sprintf(game.message, "Round %d: P1 used %s, P2 used %s", 
-                //     round_num, p1_action.card.name, p2_action.card.name);
+            strcpy(game.message, combat_log);
+            send(client_sock, &game, sizeof(game), 0);
+            printf("%s", combat_log);
 
+            usleep(500000); 
 
-            // 4. RELAPSE PHASE / INITIALIZE FOR NEXT ROUND OF STATS
-            // For a basic setup, we'll just reset hand and redraw to keep it simple                                                                                                                                                            
-            // game.p1_status.hand_count = 0;                                                                                                                                                                                                      
-            // game.p2_status.hand_count = 0;                                                                                                                                                                                                    
-            // draw_card(&game.p1_status, START_HAND_SIZE);                                                                                                                                                                                      
-            // draw_card(&game.p2_status, START_HAND_SIZE);
-
-            // Remove played cards from hand, then draw replacement cards
-            remove_card(&game.p1_status, p1_choice);
-            remove_card(&game.p2_status, p2_choice);
-
-            // Draw replacement cards (1 each)
+            // 4. RELAPSE PHASE
+            if (p1_choice != -1) remove_card(&game.p1_status, p1_choice);
+            if (p2_choice != -1) remove_card(&game.p2_status, p2_choice);
+            
             draw_card(&game.p1_status, 1);
             draw_card(&game.p2_status, 1);
             
             round_num++;
 
-            if(game.p1_status.energy > 0 || game.p2_status.energy > 0){
-            game.p1_status.energy += 1; // Passive energy regen per round
+            // FIXED: ENERGY REGENERATION
+            game.p1_status.energy += 1; 
             game.p2_status.energy += 1;
-            }
+            
+            if(game.p1_status.energy > 10) game.p1_status.energy = 10;
+            if(game.p2_status.energy > 10) game.p2_status.energy = 10;
             
             send(client_sock, &game, sizeof(game), 0);
             }
 
-
-    // TO-DO
-    // 1. Add card draw logic to draw nth-cards based on the player's energy
-    // 2. FIX formatting client sided response of the last two phases from server. . .
-    // 3. 
-    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement and bugs 
-    // 5. ENERGY BUG 
-    // 6. debug game
-
-        // AS OF APRIL 28, 10AM
-    // 1. move na ginamit is -1 index sa input
-    // 2. client has no combat resolution
-    // 3. energy is bugged, presents as negative
-    // 4. bugged combat resolution, cant fetch moves used
-    // 5. damage bugged, not reflecting properly
-    // 6. (!) better ui
-   
-close(client_sock);
+    close(client_sock);
     close(server_sock);
     return 0; 
 }
+
+
+
+
+
+
+ // AS OF APRIL 28, 10AM
+    // 1. move na ginamit is -1 index sa input DONE
+    // 2. client has no combat resolution DONE
+    // 3. energy is bugged, presents as negative DONE
+    // 4. bugged combat resolution, cant fetch moves used -- needs
+    // 5. damage bugged, not reflecting properly
+    // 6. (!) better ui

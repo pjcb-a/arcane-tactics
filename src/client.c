@@ -95,14 +95,33 @@ int main(int argc,  char *argv[]){
                     game.p2_status.hand[i].cost);
                     j++;
             }
-            if(game.p2_roll > game.p1_roll){
-            printf("\n< You(P2) go first. Select card index to play >> ");
-            } else {
-            printf("\nOpponent(P1) goes first, Then enter next move >> ");
+
+            // NEW: CONTINUOUS VALIDATION LOOP 
+            int p2_valid = 0;
+            while (!p2_valid) {
+                if(game.p2_roll > game.p1_roll){
+                    printf("\n< You(P2) go first. Select card index (0 to Skip) >> ");
+                } else {
+                    printf("\nOpponent (P1) goes first, Then enter next move (0 to Skip) >> ");
+                }
+
+                //Send updates to server 
+                bzero(buffer, sizeof(buffer));
+                fgets(buffer, sizeof(buffer), stdin);
+                send(client_sock, buffer, sizeof(buffer), 0);
+
+                // Receive validation from server
+                char status[16];
+                bzero(status, 16);
+                n = recv(client_sock, status, sizeof(status), 0);
+                
+                if (n > 0 && strcmp(status, "OK") == 0) {
+                    p2_valid = 1; // Server confirmed card is affordable
+                } else {
+                    printf("[!] Not enough energy or invalid choice! Try again.\n");
+                }
             }
-            //Send updates to server 
-            fgets(buffer, sizeof(buffer), stdin);
-            send(client_sock, buffer, sizeof(buffer), 0);
+            // end new
 
             // Receive combat resolution from server
             n = recv(client_sock, &game, sizeof(game), 0);

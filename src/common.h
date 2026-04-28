@@ -37,7 +37,7 @@ typedef struct {
 typedef struct {
     Player p1_status; // Server
     Player p2_status; // Client
-    char message[256]; // "Combat results", "Your turn", etc.
+    char message[512]; // game messages
     int p1_roll;
     int p2_roll;
 } GameState;
