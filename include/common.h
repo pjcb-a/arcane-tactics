@@ -62,6 +62,7 @@ void die_with_error(char *error_msg);
 void draw_card(Player *player, int num_cards);
 void execute_card(Player *caster, Player *target, Card card, int is_player);
 void card_move(Player *player, Card card);
+void remove_card(Player *player, int card_index);
 int dice_roll(int *p1_roll, int *p2_roll);
 
 void init_queue(ActionQueue *q, int size);

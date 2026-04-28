@@ -206,11 +206,19 @@ int main(int argc, char *argv[]){
 
 
             // 4. RELAPSE PHASE / INITIALIZE FOR NEXT ROUND OF STATS
-            // For a basic setup, we'll just reset hand and redraw to keep it simple
-            game.p1_status.hand_count = 0;
-            game.p2_status.hand_count = 0;
-            draw_card(&game.p1_status, START_HAND_SIZE);
-            draw_card(&game.p2_status, START_HAND_SIZE);
+            // For a basic setup, we'll just reset hand and redraw to keep it simple                                                                                                                                                            
+            // game.p1_status.hand_count = 0;                                                                                                                                                                                                      
+            // game.p2_status.hand_count = 0;                                                                                                                                                                                                    
+            // draw_card(&game.p1_status, START_HAND_SIZE);                                                                                                                                                                                      
+            // draw_card(&game.p2_status, START_HAND_SIZE);
+
+            // Remove played cards from hand, then draw replacement cards
+            remove_card(&game.p1_status, p1_choice);
+            remove_card(&game.p2_status, p2_choice);
+
+            // Draw replacement cards (1 each)
+            draw_card(&game.p1_status, 1);
+            draw_card(&game.p2_status, 1);
             
             round_num++;
             game.p1_status.energy += 1; // Passive energy regen per round
@@ -221,12 +229,12 @@ int main(int argc, char *argv[]){
 
 
     // TO-DO
-    // 1. fix game logic for the priority card attack   -- ?  function : constraint
-    // 2. FIX client sided response of the last two phases from server. . .
-    // 3. send update of card used to client   -- fix send and recv sockets - ONGOING
-    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
+    // 1. fix card draw logic to draw nth-cards based on the player's energy
+    // 2. FIX formatting client sided response of the last two phases from server. . .
+    // 3. 
+    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement and bugs 
     // 5. ENERGY BUG 
-    // 6. debug system
+    // 6. debug game
    
 close(client_sock);
     close(server_sock);

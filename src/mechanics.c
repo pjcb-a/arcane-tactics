@@ -25,7 +25,6 @@ const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
 
 // to add ni xian: status effects (stun and shackle)
 
-// Just error handling functions...
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
     exit(-1);
@@ -174,6 +173,17 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
             printf("Gambit Fail: %s takes 10 recoil damage!\n", caster_name);
         }
     }
+}
+
+// Removes a card from hand, shifts remaining cards left
+void remove_card(Player *player, int card_index) {
+    if (card_index < 0 || card_index >= player->hand_count) {
+        return;
+    }
+    for (int i = card_index; i < player->hand_count - 1; i++) {
+        player->hand[i] = player->hand[i + 1];
+    }
+    player->hand_count--;
 }
 
 // ------------------= CARD QUEUE LOGIC ----------------------

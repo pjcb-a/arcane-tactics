@@ -103,6 +103,13 @@ int main(int argc,  char *argv[]){
             //Send updates to server 
             fgets(buffer, sizeof(buffer), stdin);
             send(client_sock, buffer, sizeof(buffer), 0);
+
+            // Receive updated game state wiht new cards
+            n = recv(client_sock, &game, sizeof(game), 0);
+            if(n < 0){
+                die_with_error("Error: Server Disconnected...\n");
+                break;
+            }
         }
 
     close(client_sock);
