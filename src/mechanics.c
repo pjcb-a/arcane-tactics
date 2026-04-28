@@ -66,19 +66,21 @@ void draw_card(Player *player, int num_cards) {
 // ------------------ STATUS EFFECTS ------------------
 
 // Execute all card logic
-void execute_card(Player *caster, Player *target, Card card, int is_player) {
+void execute_card(Player *caster, Player *target, Card card, int is_player, char *combat_log) {
     
+    char temp[256];
     // Easy naming conventions for calling 
     char *caster_name = is_player ? "P1" : "P2";
     char *target_name = is_player ? "P2" : "P1";
-
-    printf("\n--- %s uses [%s]! ---\n", caster_name, card.name);
+        sprintf(temp, "\n--- %s uses [%s]! ---\n", caster_name, card.name);
+        strcat(combat_log, temp);
 
     // -----------------------
     // 1. PRE-ATTACK CHECKS 
     // -----------------------
     if (caster->stun_turns > 0) {
-        printf("Status: %s is STUNNED! The move is nullified.\n", caster_name);
+            sprintf(temp, "Status: %s is STUNNED! The move is nullified.\n", caster_name);
+            strcat(combat_log, temp);
         caster->stun_turns = 0; // Remove stun
         return; // EXIT FUNCTION: Card does nothing
     }
@@ -89,12 +91,14 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
     if (card.utility > 0) {
         if (strcmp(card.name, "Barrier") == 0) {
             caster->shield += card.utility;
-            printf("Status: %s gains %d Shield!\n", caster_name, card.utility);
+                sprintf(temp, "Status: %s gains %d Shield!\n", caster_name, card.utility);
+                strcat(combat_log, temp);
         } 
         else if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
             caster->hp += card.utility;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP; // Prevent overheal
-            printf("Status: %s heals for %d HP!\n", caster_name, card.utility);
+                sprintf(temp, "Status: %s heals for %d HP!\n", caster_name, card.utility);
+                strcat(combat_log, temp);
         }
     }
 
@@ -108,7 +112,8 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
         if (caster->aura_active > 0) {
             caster->aura_active = 0; 
             if (rand() % 100 < 31) { // 30% chance roughly
-                printf("PLUS AURA! 2x Damage buff triggered!\n");
+                    sprintf(temp, "PLUS AURA! 2x Damage buff triggered!\n");
+                    strcat(combat_log, temp);
                 final_damage *= 2.0f;
             }
         
@@ -116,7 +121,8 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
 
         // Apply Shackle Debuff (if active)
         if (caster->shackle_turns > 0) {
-            printf("Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
+                sprintf(temp, "Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
+                strcat(combat_log, temp);
             final_damage -= caster->shackle_damage;
             caster->shackle_turns = 0; // consume shackle
             if (final_damage < 0) final_damage = 0; // No negative damage
@@ -128,10 +134,12 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
             if (target->shield > 0) {
                 if (target->shield >= dmg_int) {
                     target->shield -= dmg_int;
-                    printf("%s's Shield absorbed %d damage! (Shield left: %d)\n", target_name, dmg_int, target->shield);
+                        sprintf(temp, "%s's Shield absorbed %d damage! (Shield left: %d)\n", target_name, dmg_int, target->shield);
+                        strcat(combat_log, temp);
                     dmg_int = 0; // Damage fully absorbed
                 } else {
-                    printf("%s's Shield absorbed %d damage, but broke!\n", target_name, target->shield);
+                        sprintf(temp, "%s's Shield absorbed %d damage, but broke!\n", target_name, target->shield);
+                        strcat(combat_log, temp);
                     dmg_int -= target->shield;
                     target->shield = 0;
                 }
@@ -140,7 +148,8 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
             // Remaining damage hits HP
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
-                printf("%s takes %d damage!\n", target_name, dmg_int);
+                    sprintf(temp, "%s takes %d damage!\n", target_name, dmg_int);
+                    strcat(combat_log, temp);
             }
         }
     }
@@ -151,26 +160,34 @@ void execute_card(Player *caster, Player *target, Card card, int is_player) {
     if (strcmp(card.name, "Psychic") == 0) {
         if (rand() % 100 < 31) { // 30% chance
             target->stun_turns = 1;
-            printf("Status: %s is STUNNED!\n", target_name);
+                sprintf(temp, "Status: %s is STUNNED!\n", target_name);
+                strcat(combat_log, temp);
         }
     } 
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
-        printf("Status: %s is SHACKLED!\n", target_name);
+            sprintf(temp, "Status: %s is SHACKLED!\n", target_name);
+            strcat(combat_log, temp);
     }
+
     else if (strcmp(card.name, "Aura Stance") == 0) {
         caster->aura_active = 1;
-        printf("Status: %s enters Aura Stance!\n", caster_name);
+            sprintf(temp, "Status: %s enters Aura Stance!\n", caster_name);
+            strcat(combat_log, temp);
     }
+
     else if (strcmp(card.name, "Arcane Gambit") == 0) {
         if (rand() % 100 < 50) {
             caster->hp += 20;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-            printf("Gambit Success: %s heals 20 HP!\n", caster_name);
+                sprintf(temp, "Gambit Success: %s heals 20 HP!\n", caster_name);
+                strcat(combat_log, temp);
+
         } else {
             caster->hp -= 10;
-            printf("Gambit Fail: %s takes 10 recoil damage!\n", caster_name);
+                sprintf(temp, "Gambit Fail: %s takes 10 recoil damage!\n", caster_name);
+                strcat(combat_log, temp);
         }
     }
 }

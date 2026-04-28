@@ -104,6 +104,14 @@ int main(int argc,  char *argv[]){
             fgets(buffer, sizeof(buffer), stdin);
             send(client_sock, buffer, sizeof(buffer), 0);
 
+            // Receive combat resolution from server
+            n = recv(client_sock, &game, sizeof(game), 0);
+            if(n < 0){
+                die_with_error("Error: Server Disconnected...\n");
+                break;
+            }
+            printf("%s", game.message);
+
             // Receive updated game state wiht new cards
             n = recv(client_sock, &game, sizeof(game), 0);
             if(n < 0){

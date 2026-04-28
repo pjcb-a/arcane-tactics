@@ -158,8 +158,8 @@ int main(int argc, char *argv[]){
             init_queue(&priority_queue, 10);
             init_queue(&regular_queue, 10);
             
-            Action p1_action = {1, game.p1_status.hand[p1_choice - 1]}; 
-            Action p2_action = {2, game.p2_status.hand[p2_choice - 1]}; 
+            Action p1_action = {1, game.p1_status.hand[p1_choice]}; 
+            Action p2_action = {2, game.p2_status.hand[p2_choice]}; 
             
             // Energy withdrawal after every move.
             game.p1_status.energy -= p1_action.card.cost;
@@ -180,7 +180,11 @@ int main(int argc, char *argv[]){
             
             // 3. CLOSURE PHASE -- (aray mo) The round results and prep for another round.  
             // Then after combat phase ends, dequeue the used card and draw 1 card and minus the energy of the card from the energt of player.
-            printf("\n------- COMBAT RESOLUTION -------\n");
+            char combat_log[2048] = "\n------- COMBAT RESOLUTION -------\n";
+
+            Card p1_card = game.p1_status.hand[p1_choice];
+            Card p2_card = game.p2_status.hand[p2_choice];
+
             for (int j = 0; j < 2; j++) {
                 Action current_move;
                 
@@ -192,17 +196,22 @@ int main(int argc, char *argv[]){
                         break; // Protection / para may else statement lang sa nested-if XD
                     }
 
-                    // Call the execute_card function where the effect and dmg happens.
+                    // Call the execute_card function where the effect and dmg happens, with log buffer
                     if (current_move.player_id == 1) {
-                        execute_card(&game.p1_status, &game.p2_status, current_move.card, 1);
+                        execute_card(&game.p1_status, &game.p2_status, current_move.card, 1, combat_log);
                     } else {
-                        execute_card(&game.p2_status, &game.p1_status, current_move.card, 0);
+                        execute_card(&game.p2_status, &game.p1_status, current_move.card, 0, combat_log);
                     }
                 }
 
+                strcpy(game.message, combat_log);
+                send(client_sock, &game, sizeof(game), 0);
+                printf("%s", combat_log);
+
+                usleep(500000); // Sleep for 0.5 seconds to allow client to receive and print combat log before next round starts
                 // Update the client !!
-                sprintf(game.message, "Round %d: P1 used %s, P2 used %s", 
-                    round_num, p1_action.card.name, p2_action.card.name);
+                // sprintf(game.message, "Round %d: P1 used %s, P2 used %s", 
+                //     round_num, p1_action.card.name, p2_action.card.name);
 
 
             // 4. RELAPSE PHASE / INITIALIZE FOR NEXT ROUND OF STATS
