@@ -221,15 +221,18 @@ int main(int argc, char *argv[]){
             draw_card(&game.p2_status, 1);
             
             round_num++;
+
+            if(game.p1_status.energy > 0 || game.p2_status.energy > 0){
             game.p1_status.energy += 1; // Passive energy regen per round
             game.p2_status.energy += 1;
-
+            }
+            
             send(client_sock, &game, sizeof(game), 0);
             }
 
 
     // TO-DO
-    // 1. fix card draw logic to draw nth-cards based on the player's energy
+    // 1. Add card draw logic to draw nth-cards based on the player's energy
     // 2. FIX formatting client sided response of the last two phases from server. . .
     // 3. 
     // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement and bugs 
