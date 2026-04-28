@@ -25,7 +25,6 @@ const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
 
 // to add ni xian: status effects (stun and shackle)
 
-// Just error handling functions...
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
     exit(-1);

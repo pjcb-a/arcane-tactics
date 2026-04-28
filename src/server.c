@@ -229,12 +229,12 @@ int main(int argc, char *argv[]){
 
 
     // TO-DO
-    // 1. fix game logic for the priority card attack   -- ?  function : constraint
-    // 2. FIX client sided response of the last two phases from server. . .
-    // 3. send update of card used to client   -- fix send and recv sockets - ONGOING
-    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement 
+    // 1. fix card draw logic to draw nth-cards based on the player's energy
+    // 2. FIX formatting client sided response of the last two phases from server. . .
+    // 3. 
+    // 4. Card redraw logic when a player has used a card  -- fix card increment/decrement and bugs 
     // 5. ENERGY BUG 
-    // 6. debug system
+    // 6. debug game
    
 close(client_sock);
     close(server_sock);
