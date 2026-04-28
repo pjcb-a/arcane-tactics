@@ -38,9 +38,9 @@ int dice_roll(int *p1_roll, int *p2_roll){
     do {
         *p1_roll = (rand() % 6) + 1;
         *p2_roll = (rand() % 6) + 1;
-    } while (*p1_roll == *p2_roll);
+    } while (*p1_roll == *p2_roll); // while no winner, keep rolling
 
-    return (*p1_roll > *p2_roll) ? 1 : 2;
+    return (*p1_roll > *p2_roll) ? 1 : 2; // return p1 win else p2 win
 }
 
 
