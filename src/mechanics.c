@@ -71,7 +71,7 @@ void draw_card(Player *player, int num_cards) {
 // Execute all card logic
 void execute_card(Player *caster, Player *target, Card card, int is_player, char *combat_log) {
     
-    char temp[256];
+    char temp[512];
     // Easy naming conventions for calling 
     char *caster_name = is_player ? "P1" : "P2";
     char *target_name = is_player ? "P2" : "P1";
