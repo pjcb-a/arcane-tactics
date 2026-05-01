@@ -64,8 +64,9 @@ int main(int argc, char *argv[]){
     game.p2_status.hand_count = 0;
 
 
-    // 1. PREPARATION PHASE -- Dice roll to determine who goes first
-    int winner = dice_roll(&game.p1_roll, &game.p2_roll);
+   // 1. PREPARATION PHASE
+    // Capture the winner directly into the struct for network transmission
+    game.turn_winner = dice_roll(&game.p1_roll, &game.p2_roll); 
 
     sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
@@ -75,14 +76,16 @@ int main(int argc, char *argv[]){
     printf("Opponent (P2) rolled: %d\n", game.p2_roll);
     printf("------------------------\n\n");
 
+    // use the turn_winner from common
+    if (game.turn_winner == 1) {
+        printf("You (P1) go first!\n");
+    } else {
+        printf("Opponent (P2) goes first!\n"); 
+    }
+
     // Send dice roll status to client
     send(client_sock, &game, sizeof(game), 0);
 
-    if (winner == 1) {
-        printf("You (P1) go first!\n");
-    } else {
-        printf("AIN'T NO WAAAYY, opponent goes first!\n"); 
-    }
 
 
     draw_card(&game.p1_status, START_HAND_SIZE);
@@ -90,11 +93,14 @@ int main(int argc, char *argv[]){
 
     // 2. GAME PHASE -- Actual loop of the game
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
+            game.p1_status.shield = 0; // Reset P1 shield for the new round
+            game.p2_status.shield = 0; // Reset P2 shield for the new round
             printf("\n------------------------------------\n");
             printf( "  - - - ROUND %d - - - START! - - -  ", round_num);
             printf("\n------------------------------------\n");
 
             //Send the round also to client
+            memset(game.message, 0, sizeof(game.message));
             sprintf(game.message, "  - - - ROUND %d - - - START! - - -  ", round_num);
             send(client_sock, &game, sizeof(game), 0);
 
@@ -162,6 +168,7 @@ int main(int argc, char *argv[]){
                     send(client_sock, "RETRY", 6, 0);
                 }
             }
+            usleep(10000);
             // === END NEW ===
             
             // EXECUTION PHASE
@@ -193,7 +200,7 @@ int main(int argc, char *argv[]){
             // === END NEW ===
             
             // PLACE ENQUEUE
-            if (winner == 1) {
+            if (game.turn_winner == 1) {
                 if(p1_action.card.priority == 1) enqueue(&priority_queue, p1_action);
                 else enqueue(&regular_queue, p1_action);
 
@@ -208,7 +215,9 @@ int main(int argc, char *argv[]){
             }
             
             // 3. CLOSURE PHASE
-            char combat_log[512] = "\n------- COMBAT RESOLUTION -------\n";
+            char combat_log[1024]; 
+            memset(combat_log, 0, sizeof(combat_log)); // clear old data in buffer
+            strcpy(combat_log, "\n------- COMBAT RESOLUTION -------\n");
 
             for (int k = 0; k < 2; k++) {
                 Action current_move;

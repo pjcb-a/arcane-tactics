@@ -78,18 +78,34 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
 
     if (strcmp(card.name, "Skip") == 0) { // SKIP CHECK!!!
     sprintf(temp, ">>> %s decided to skip this turn and conserve energy.\n", caster_name);
-    strcat(combat_log, temp);
+    // check for potential overflow
+        if (strlen(combat_log) + strlen(temp) < 1023) {
+            strcat(combat_log, temp);
+        } else {
+            // marker that the log was truncated
+            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+        }
     return; // Exit early so no other damage/logic happens
 }
         sprintf(temp, "\n--- %s uses [%s]! ---\n", caster_name, card.name);
-        strcat(combat_log, temp);
+         if (strlen(combat_log) + strlen(temp) < 1023) {
+            strcat(combat_log, temp);
+        } else {
+            // marker that the log was truncated
+            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+        }
 
     // -----------------------
     // 1. PRE-ATTACK CHECKS 
     // -----------------------
     if (caster->stun_turns > 0) {
             sprintf(temp, "Status: %s is STUNNED! The move is nullified.\n", caster_name);
+             if (strlen(combat_log) + strlen(temp) < 1023) {
             strcat(combat_log, temp);
+        } else {
+            // marker that the log was truncated
+            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+        }
         caster->stun_turns = 0; // Remove stun
         return; // EXIT FUNCTION: Card does nothing
     }
@@ -101,15 +117,25 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         if (strcmp(card.name, "Barrier") == 0) {
             caster->shield += card.utility;
                 sprintf(temp, "Status: %s gains %d Shield!\n", caster_name, card.utility);
-                strcat(combat_log, temp);
+                 if (strlen(combat_log) + strlen(temp) < 1023) {
+                    strcat(combat_log, temp);
+                } else {
+                    // marker that the log was truncated
+                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                }
         } 
         else if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
             caster->hp += card.utility;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP; // Prevent overheal
                 sprintf(temp, "Status: %s heals for %d HP!\n", caster_name, card.utility);
-                strcat(combat_log, temp);
-        }
+                        if (strlen(combat_log) + strlen(temp) < 1023) {
+                    strcat(combat_log, temp);
+                } else {
+                    // marker that the log was truncated
+                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                }
     }
+}
 
     // ------------------------------
     // 3. CALCULATE AND APPLY DAMAGE
@@ -122,7 +148,12 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             caster->aura_active = 0; 
             if (rand() % 100 < 31) { // 30% chance roughly
                     sprintf(temp, "PLUS AURA! 2x Damage buff triggered!\n");
+                if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
+                } else {
+                    // marker that the log was truncated
+                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                }
                 final_damage *= 2.0f;
             }
         
@@ -131,7 +162,12 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         // Apply Shackle Debuff (if active)
         if (caster->shackle_turns > 0) {
                 sprintf(temp, "Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
-                strcat(combat_log, temp);
+                 if (strlen(combat_log) + strlen(temp) < 1023) {
+                    strcat(combat_log, temp);
+                } else {
+                    // marker that the log was truncated
+                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                }
             final_damage -= caster->shackle_damage;
             caster->shackle_turns = 0; // consume shackle
             if (final_damage < 0) final_damage = 0; // No negative damage
@@ -144,11 +180,21 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
                 if (target->shield >= dmg_int) {
                     target->shield -= dmg_int;
                         sprintf(temp, "%s's Shield absorbed %d damage! (Shield left: %d)\n", target_name, dmg_int, target->shield);
+                    if (strlen(combat_log) + strlen(temp) < 1023) {
                         strcat(combat_log, temp);
+                    } else {
+                        // marker that the log was truncated
+                        strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                    }
                     dmg_int = 0; // Damage fully absorbed
                 } else {
                         sprintf(temp, "%s's Shield absorbed %d damage, but broke!\n", target_name, target->shield);
+                         if (strlen(combat_log) + strlen(temp) < 1023) {
                         strcat(combat_log, temp);
+                    } else {
+                        // marker that the log was truncated
+                        strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                    }
                     dmg_int -= target->shield;
                     target->shield = 0;
                 }
@@ -158,7 +204,12 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
                     sprintf(temp, "%s takes %d damage!\n", target_name, dmg_int);
+                     if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
+                } else {
+                    // marker that the log was truncated
+                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+                }
             }
         }
     }
@@ -170,20 +221,35 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         if (rand() % 100 < 31) { // 30% chance
             target->stun_turns = 1;
                 sprintf(temp, "Status: %s is STUNNED!\n", target_name);
+                 if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
+            } else {
+                // marker that the log was truncated
+                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+            }
         }
     } 
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
             sprintf(temp, "Status: %s is SHACKLED!\n", target_name);
-            strcat(combat_log, temp);
+            if (strlen(combat_log) + strlen(temp) < 1023) {
+                strcat(combat_log, temp);
+            } else {
+                // marker that the log was truncated
+                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+            }
     }
 
     else if (strcmp(card.name, "Aura Stance") == 0) {
         caster->aura_active = 1;
             sprintf(temp, "Status: %s enters Aura Stance!\n", caster_name);
-            strcat(combat_log, temp);
+            if (strlen(combat_log) + strlen(temp) < 1023) {
+                strcat(combat_log, temp);
+            } else {
+                // marker that the log was truncated
+                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+            }
     }
 
     else if (strcmp(card.name, "Arcane Gambit") == 0) {
@@ -191,12 +257,22 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             caster->hp += 20;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP;
                 sprintf(temp, "Gambit Success: %s heals 20 HP!\n", caster_name);
+                if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
+            } else {
+                // marker that the log was truncated
+                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+            }
 
         } else {
             caster->hp -= 10;
                 sprintf(temp, "Gambit Fail: %s takes 10 recoil damage!\n", caster_name);
+                if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
+            } else {
+                // marker that the log was truncated
+                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+            }
         }
     }
 }
@@ -236,6 +312,7 @@ int is_full(ActionQueue *q) {
 void enqueue(ActionQueue *q, Action data){
     if(is_full(q)) {
         printf("Queue is Full\n");
+        return; // <--- FIX: Prevents logic from continuing if full
     }
 
     if(is_empty(q)){
@@ -246,7 +323,7 @@ void enqueue(ActionQueue *q, Action data){
     }
 
     q->queue[q->rear] = data;
-}
+ } // <--- SYNTAX FIX: This brace closes the enqueue function properly
 
 Action dequeue(ActionQueue *q){
     Action empty = q->queue[q->front];
@@ -258,3 +335,4 @@ Action dequeue(ActionQueue *q){
     }
     return empty;
 }
+

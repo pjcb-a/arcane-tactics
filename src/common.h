@@ -37,9 +37,10 @@ typedef struct {
 typedef struct {
     Player p1_status; // Server
     Player p2_status; // Client
-    char message[512]; // game messages
+    char message[1024]; // game messages increased from 512
     int p1_roll;
     int p2_roll;
+    int turn_winner;
 } GameState;
 
 // Queue logic for card prio and dmg distribution with DSA source code

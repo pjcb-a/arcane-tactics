@@ -57,18 +57,19 @@ int main(int argc,  char *argv[]){
                 die_with_error("Error: Server Disconnected...\n");
         }
 
-    // 1. PREPARATION PHASE -- Dice roll to determine who goes first
+   // 1. PREPARATION PHASE -- Dice roll results from server
     printf("\n%s\n", game.message);
     printf("\n--- DICE ROLL RESULT ---\n");
-    printf("You (P2) rolled: %d\n", game.p1_roll);
-    printf("Opponent (P1) rolled: %d\n", game.p2_roll);
+    printf("You (P2) rolled: %d\n", game.p2_roll);
+    printf("Opponent (P1) rolled: %d\n", game.p1_roll); 
     printf("------------------------\n\n");
 
-        if(game.p2_roll > game.p1_roll) {
-            printf("You (P2) go first!\n");
-        } else {
-            printf("AIN'T NO WAAAYY, opponent (P1) goes first!\n");
-        }
+    // turn_winner from server
+    if (game.turn_winner == 2) {
+        printf("You (P2) go first!\n");
+    } else {
+        printf("AIN'T NO WAAAYY, opponent (P1) goes first!\n");
+    }
 
     // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
@@ -99,7 +100,7 @@ int main(int argc,  char *argv[]){
             // NEW: CONTINUOUS VALIDATION LOOP 
             int p2_valid = 0;
             while (!p2_valid) {
-                if(game.p2_roll > game.p1_roll){
+                if(game.turn_winner == 2){
                     printf("\n< You(P2) go first. Select card index (0 to Skip) >> ");
                 } else {
                     printf("\nOpponent (P1) goes first, Then enter next move (0 to Skip) >> ");
