@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "common.h"
 #include <time.h>
+#include <ctype.h>
 
 // ALL CARDS/ABILITIES
 const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
@@ -81,6 +82,54 @@ void draw_card(Player *player, int num_cards) { // new rolling system that limit
         player->hand[player->hand_count] = drawn_card;
         player->hand_count++;
     }
+}
+
+// P1 perspective (P1="You", P2="Opponent")
+// P2 perspective (P2="You", P1="Opponent")
+void apply_perspective(const char *log, char *out, int is_p1) {
+    const char *self_tag   = is_p1 ? "P1" : "P2";
+    const char *enemy_tag  = is_p1 ? "P2" : "P1";
+
+    int out_i = 0;
+    int len = strlen(log);
+
+    for (int i = 0; i < len && out_i < 1022; i++) {
+        // Try to match self_tag first
+        if (strncmp(log + i, self_tag, 2) == 0) {
+            // Make sure it is not part of a longer word
+            char before = (i > 0) ? log[i - 1] : ' ';
+            char after  = log[i + 2];
+            int boundary = !isalnum((unsigned char)before) && !isalnum((unsigned char)after);
+            if (boundary) {
+                const char *sub = "You";
+                int sub_len = strlen(sub);
+                if (out_i + sub_len < 1023) {
+                    strncpy(out + out_i, sub, sub_len);
+                    out_i += sub_len;
+                    i += 1; // skip 2nd char of tag
+                    continue;
+                }
+            }
+        }
+        // Try to match enemy tag p2 or p1 depending on perspective
+        if (strncmp(log + i, enemy_tag, 2) == 0) {
+            char before = (i > 0) ? log[i - 1] : ' ';
+            char after  = log[i + 2];
+            int boundary = !isalnum((unsigned char)before) && !isalnum((unsigned char)after);
+            if (boundary) {
+                const char *sub = "Opponent";
+                int sub_len = strlen(sub);
+                if (out_i + sub_len < 1023) {
+                    strncpy(out + out_i, sub, sub_len);
+                    out_i += sub_len;
+                    i += 1;
+                    continue;
+                }
+            }
+        }
+        out[out_i++] = log[i];
+    }
+    out[out_i] = '\0';
 }
 
 // ------------------ STATUS EFFECTS ------------------

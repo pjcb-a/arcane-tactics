@@ -226,15 +226,26 @@ int main(int argc, char *argv[]){
             }
             
             // 3. CLOSURE PHASE
-            char combat_log[1024]; 
-            memset(combat_log, 0, sizeof(combat_log)); 
-            
-            // [NEW/ALTERED CODE - Inform both players of the Gamble Result]
-            sprintf(combat_log, "\n------- TURN GAMBLE -------\n"
-                                "P1 rolled: %d, P2 rolled: %d\n"
-                                "Winner: Player %d goes first!\n"
-                                "---------------------------\n", 
-                                game.p1_roll, game.p2_roll, game.turn_winner);
+            // Perspective gamble winner
+            const char *server_winner = (game.turn_winner == 1) ? "You" : "Opponent";
+            const char *client_winner = (game.turn_winner == 2) ? "You" : "Opponent";
+
+            char server_gamble[256];
+            sprintf(server_gamble, "\n------- TURN GAMBLE -------\n"
+                                "You rolled: %d, Opponent rolled: %d\n"
+                                "Winner: %s goes first!\n"
+                                "---------------------------\n",
+                                game.p1_roll, game.p2_roll, server_winner);
+
+            char client_gamble[256];
+            sprintf(client_gamble, "\n------- TURN GAMBLE -------\n"
+                                "You rolled: %d, Opponent rolled: %d\n"
+                                "Winner: %s goes first!\n"
+                                "---------------------------\n",
+                                game.p2_roll, game.p1_roll, client_winner);
+
+            char combat_log[1024];
+            memset(combat_log, 0, sizeof(combat_log));
 
             for (int k = 0; k < 2; k++) {
                 Action current_move;
@@ -253,9 +264,18 @@ int main(int argc, char *argv[]){
                 }
             }
 
-            strcpy(game.message, combat_log);
+            // client message
+            char client_full[1280];
+            snprintf(client_full, sizeof(client_full), "%s%s", client_gamble, combat_log);
+            strcpy(game.message, client_full);
             send(client_sock, &game, sizeof(game), 0);
-            typewriter(combat_log, 20);
+
+            // server message
+            char server_combat[1024];
+            apply_perspective(combat_log, server_combat, 1);
+            char server_full[1280];
+            snprintf(server_full, sizeof(server_full), "%s%s", server_gamble, server_combat);
+            typewriter(server_full, 20);
 
             usleep(500000); 
 
