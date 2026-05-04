@@ -8,6 +8,17 @@
 #include "common.h"
 #include <time.h>
 
+// typewriter animation for server side
+void typewriter(const char *text, int delay_ms) {
+    if (text == NULL) return;
+    for (int i = 0; text[i] != '\0'; i++) {
+        printf("%c", text[i]);
+        fflush(stdout); // Forces the letter to print immediately
+        usleep(delay_ms * 1000);
+    }
+    printf("\n");
+}
+
 
 int main(int argc, char *argv[]){
 
@@ -65,28 +76,17 @@ int main(int argc, char *argv[]){
 
 
    // 1. PREPARATION PHASE
-    // Capture the winner directly into the struct for network transmission
+    /* [OLD DISCARDED CODE - Initial Dice Roll (Turn order now happens every round)]
     game.turn_winner = dice_roll(&game.p1_roll, &game.p2_roll); 
+    */
 
+    // [NEW CODE - Generic Welcome]
     sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
-    printf("\n%s\n", game.message);
-    printf("\n--- DICE ROLL RESULT ---\n");
-    printf("You (P1) rolled: %d\n", game.p1_roll);
-    printf("Opponent (P2) rolled: %d\n", game.p2_roll);
-    printf("------------------------\n\n");
-
-    // use the turn_winner from common
-    if (game.turn_winner == 1) {
-        printf("You (P1) go first!\n");
-    } else {
-        printf("Opponent (P2) goes first!\n"); 
-    }
-
-    // Send dice roll status to client
+    // Send initial game state
     send(client_sock, &game, sizeof(game), 0);
 
-
+    typewriter(game.message, 30); // typewriter anim
 
     draw_card(&game.p1_status, START_HAND_SIZE);
     draw_card(&game.p2_status, START_HAND_SIZE);
@@ -95,13 +95,22 @@ int main(int argc, char *argv[]){
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
             game.p1_status.shield = 0; // Reset P1 shield for the new round
             game.p2_status.shield = 0; // Reset P2 shield for the new round
-            printf("\n------------------------------------\n");
-            printf( "  - - - ROUND %d - - - START! - - -  ", round_num);
-            printf("\n------------------------------------\n");
 
-            //Send the round also to client
+            // [NEW/ALTERED CODE - Unified Header for Server with scaling energy info]
+            printf("\n========================================\n");
+            printf("             ARCANE TACTICS             \n");
+            printf("               ROUND %d                 \n", round_num);
+            if (round_num > 5) printf("        ⚡ MANA SURGE ACTIVE! ⚡       \n");
+            printf("========================================\n");
+
+            // [NEW/ALTERED CODE - Send Round Header to Client via game.message]
             memset(game.message, 0, sizeof(game.message));
-            sprintf(game.message, "  - - - ROUND %d - - - START! - - -  ", round_num);
+            sprintf(game.message, "\n========================================\n"
+                                  "             ARCANE TACTICS             \n"
+                                  "               ROUND %d                 \n"
+                                  "%s"
+                                  "========================================\n", 
+                                  round_num, (round_num > 5) ? "        ⚡ MANA SURGE ACTIVE! ⚡       \n" : "");
             send(client_sock, &game, sizeof(game), 0);
 
             printf("Your HP: %d,   Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
@@ -110,11 +119,12 @@ int main(int argc, char *argv[]){
             printf(" \n---- YOUR HAND ---- \n\n");
             int j = 1;
             for(int i = 0; i < game.p1_status.hand_count; i++) {
-                printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", j,
+                printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d, PRIO:%d)\n", j,
                     game.p1_status.hand[i].name,
                     game.p1_status.hand[i].damage,
                     game.p1_status.hand[i].utility,
-                    game.p1_status.hand[i].cost);
+                    game.p1_status.hand[i].cost,
+                    game.p1_status.hand[i].priority);
                     j++;
             }
 
@@ -169,15 +179,17 @@ int main(int argc, char *argv[]){
                 }
             }
             usleep(10000);
-            // === END NEW ===
             
+            // [NEW/ALTERED CODE - Gambled Turn Order determined AFTER selection]
+            game.turn_winner = dice_roll(&game.p1_roll, &game.p2_roll);
+
             // EXECUTION PHASE
             ActionQueue priority_queue;
             ActionQueue regular_queue;
             init_queue(&priority_queue, 10);
             init_queue(&regular_queue, 10);
             
-            // === NEW: CONVERT CHOICES TO ACTIONS WITH SKIP LOGIC ===
+            // CONVERT CHOICES TO ACTIONS WITH SKIP LOGIC
             Action p1_action, p2_action;
             p1_action.player_id = 1;
             p2_action.player_id = 2;
@@ -197,9 +209,8 @@ int main(int argc, char *argv[]){
                 p2_action.card = game.p2_status.hand[p2_choice];
                 game.p2_status.energy -= p2_action.card.cost;
             }
-            // === END NEW ===
             
-            // PLACE ENQUEUE
+            // [NEW/ALTERED CODE - Enqueue logic using the NEW turn_winner result]
             if (game.turn_winner == 1) {
                 if(p1_action.card.priority == 1) enqueue(&priority_queue, p1_action);
                 else enqueue(&regular_queue, p1_action);
@@ -216,8 +227,14 @@ int main(int argc, char *argv[]){
             
             // 3. CLOSURE PHASE
             char combat_log[1024]; 
-            memset(combat_log, 0, sizeof(combat_log)); // clear old data in buffer
-            strcpy(combat_log, "\n------- COMBAT RESOLUTION -------\n");
+            memset(combat_log, 0, sizeof(combat_log)); 
+            
+            // [NEW/ALTERED CODE - Inform both players of the Gamble Result]
+            sprintf(combat_log, "\n------- TURN GAMBLE -------\n"
+                                "P1 rolled: %d, P2 rolled: %d\n"
+                                "Winner: Player %d goes first!\n"
+                                "---------------------------\n", 
+                                game.p1_roll, game.p2_roll, game.turn_winner);
 
             for (int k = 0; k < 2; k++) {
                 Action current_move;
@@ -238,7 +255,7 @@ int main(int argc, char *argv[]){
 
             strcpy(game.message, combat_log);
             send(client_sock, &game, sizeof(game), 0);
-            printf("%s", combat_log);
+            typewriter(combat_log, 20);
 
             usleep(500000); 
 
@@ -249,14 +266,20 @@ int main(int argc, char *argv[]){
             draw_card(&game.p1_status, 1);
             draw_card(&game.p2_status, 1);
             
-            round_num++;
-
-            // FIXED: ENERGY REGENERATION
-            game.p1_status.energy += 1; 
-            game.p2_status.energy += 1;
+            // scaling energy regen:
+            // round 1-5 = +1 energy, round 6 onwards = +2 energy
+            if (round_num > 5){
+                game.p1_status.energy += 2;
+                game.p2_status.energy += 2;
+            } else {
+                game.p1_status.energy += 1;
+                game.p2_status.energy += 1;
+            }
             
             if(game.p1_status.energy > 10) game.p1_status.energy = 10;
             if(game.p2_status.energy > 10) game.p2_status.energy = 10;
+            
+            round_num++; // increment round after energy calculation
             
             send(client_sock, &game, sizeof(game), 0);
             }
@@ -265,16 +288,3 @@ int main(int argc, char *argv[]){
     close(server_sock);
     return 0; 
 }
-
-
-
-
-
-
- // AS OF APRIL 28, 10AM
-    // 1. move na ginamit is -1 index sa input DONE
-    // 2. client has no combat resolution DONE
-    // 3. energy is bugged, presents as negative DONE
-    // 4. bugged combat resolution, cant fetch moves used -- needs
-    // 5. damage bugged, not reflecting properly
-    // 6. (!) better ui

@@ -26,8 +26,6 @@ const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
     {"Skip", 0, 0, 0, 0}
 };
 
-// to add ni xian: status effects (stun and shackle)
-
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
     exit(-1);
@@ -47,21 +45,40 @@ int dice_roll(int *p1_roll, int *p2_roll){
 
 
 // the random card giver function to each player at the start of the game and when they draw cards
-void draw_card(Player *player, int num_cards) {
+// mechanics.c
 
-    // error handling for hand count -- segmentation fault out of bounds --
-    if(player->hand_count < 0 || player->hand_count > MAX_HAND_SIZE) {
-        player->hand_count = 0; // reset hand count if out of bounds
-    }
+void draw_card(Player *player, int num_cards) { // new rolling system that limits each player to only have two of each card
+    for (int i = 0; i < num_cards; i++) {
+        if (player->hand_count >= MAX_HAND_SIZE) break;
 
-    for(int i = 0; i < num_cards; i++) {
-        if(player->hand_count >= MAX_HAND_SIZE) {
-            printf("Hand is full! Cannot draw more cards.\n");
-            return;
-        }
-        int rand_index = rand() % 10; // random index for card pool
+        Card drawn_card;
+        int is_duplicate_limit_reached;
+        int attempts = 0;
 
-        player->hand[player->hand_count] = Card_Pool[rand_index];
+        // [NEW CODE - Duplicate Limit Logic]
+        do {
+            is_duplicate_limit_reached = 0;
+            int card_index = rand() % 10; // Equal chance for all 10 cards
+            drawn_card = Card_Pool[card_index];
+
+            int count = 0;
+            for (int j = 0; j < player->hand_count; j++) {
+                if (strcmp(player->hand[j].name, drawn_card.name) == 0) {
+                    count++;
+                }
+            }
+
+            if (count >= 2) {
+                is_duplicate_limit_reached = 1;
+            }
+            
+            attempts++;
+            // Safety break to prevent infinite loops if hand is weirdly full
+            if (attempts > 50) break; 
+
+        } while (is_duplicate_limit_reached);
+
+        player->hand[player->hand_count] = drawn_card;
         player->hand_count++;
     }
 }
