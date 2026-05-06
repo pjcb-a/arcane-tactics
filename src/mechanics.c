@@ -94,6 +94,29 @@ void apply_perspective(const char *log, char *out, int is_p1) {
     int len = strlen(log);
 
     for (int i = 0; i < len && out_i < 1022; i++) {
+
+        // checks the s in P1's or P2's first
+        if (strncmp(log + i, is_p1 ? "P1's" : "P2's", 4) == 0) {
+            const char *sub = "Your";
+            int sub_len = strlen(sub);
+            if (out_i + sub_len < 1023) {
+                strncpy(out + out_i, sub, sub_len);
+                out_i += sub_len;
+                i += 3;
+                continue;
+            }
+        }
+        if (strncmp(log + i, is_p1 ? "P2's" : "P1's", 4) == 0) {
+            const char *sub = "Opponent's";
+            int sub_len = strlen(sub);
+            if (out_i + sub_len < 1023) {
+                strncpy(out + out_i, sub, sub_len);
+                out_i += sub_len;
+                i += 3;
+                continue;
+            }
+        }
+
         // Try to match self_tag first
         if (strncmp(log + i, self_tag, 2) == 0) {
             // Make sure it is not part of a longer word
@@ -153,7 +176,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         }
     return; // Exit early so no other damage/logic happens
 }
-        sprintf(temp, "\n--- %s uses [%s]! ---\n", caster_name, card.name);
+        sprintf(temp, "\n--- %s used [%s]! ---\n", caster_name, card.name);
          if (strlen(combat_log) + strlen(temp) < 1023) {
             strcat(combat_log, temp);
         } else {
@@ -165,7 +188,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     // 1. PRE-ATTACK CHECKS 
     // -----------------------
     if (caster->stun_turns > 0) {
-            sprintf(temp, "Status: %s is STUNNED! The move is nullified.\n", caster_name);
+            sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", caster_name);
              if (strlen(combat_log) + strlen(temp) < 1023) {
             strcat(combat_log, temp);
         } else {
@@ -182,7 +205,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     if (card.utility > 0) {
         if (strcmp(card.name, "Barrier") == 0) {
             caster->shield += card.utility;
-                sprintf(temp, "Status: %s gains %d Shield!\n", caster_name, card.utility);
+                sprintf(temp, "Status: %s gained %d Shield!\n", caster_name, card.utility);
                  if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
                 } else {
@@ -193,7 +216,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         else if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
             caster->hp += card.utility;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP; // Prevent overheal
-                sprintf(temp, "Status: %s heals for %d HP!\n", caster_name, card.utility);
+                sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
                         if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
                 } else {
@@ -227,7 +250,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
 
         // Apply Shackle Debuff (if active)
         if (caster->shackle_turns > 0) {
-                sprintf(temp, "Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
+                sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
                  if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
                 } else {
@@ -269,7 +292,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             // Remaining damage hits HP
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
-                    sprintf(temp, "%s takes %d damage!\n", target_name, dmg_int);
+                    sprintf(temp, "%s took %d damage!\n", target_name, dmg_int);
                      if (strlen(combat_log) + strlen(temp) < 1023) {
                     strcat(combat_log, temp);
                 } else {
@@ -286,7 +309,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     if (strcmp(card.name, "Psychic") == 0) {
         if (rand() % 100 < 31) { // 30% chance
             target->stun_turns = 1;
-                sprintf(temp, "Status: %s is STUNNED!\n", target_name);
+                sprintf(temp, "Status: %s cannot move next turn — STUNNED!\n", target_name);
                  if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
             } else {
@@ -298,7 +321,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
-            sprintf(temp, "Status: %s is SHACKLED!\n", target_name);
+            sprintf(temp, "Status: %s cannot attack freely - Shackled!\n", target_name);
             if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
             } else {
@@ -309,7 +332,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
 
     else if (strcmp(card.name, "Aura Stance") == 0) {
         caster->aura_active = 1;
-            sprintf(temp, "Status: %s enters Aura Stance!\n", caster_name);
+            sprintf(temp, "Status: %s entered Aura Stance!\n", caster_name);
             if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
             } else {
@@ -322,7 +345,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         if (rand() % 100 < 50) {
             caster->hp += 20;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-                sprintf(temp, "Gambit Success: %s heals 20 HP!\n", caster_name);
+                sprintf(temp, "Gambit Success: %s healed for 20 HP!\n", caster_name);
                 if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
             } else {
@@ -332,7 +355,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
 
         } else {
             caster->hp -= 10;
-                sprintf(temp, "Gambit Fail: %s takes 10 recoil damage!\n", caster_name);
+                sprintf(temp, "Gambit Fail: %s took 10 recoil damage!\n", caster_name);
                 if (strlen(combat_log) + strlen(temp) < 1023) {
                 strcat(combat_log, temp);
             } else {

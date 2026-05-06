@@ -114,7 +114,7 @@ int main(int argc, char *argv[]){
             send(client_sock, &game, sizeof(game), 0);
 
             printf("Your HP: %d,   Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
-            printf("Opponent HP: %d,   Opponent Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+            printf("Opponent's HP: %d,   Opponent's Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
 
             printf(" \n---- YOUR HAND ---- \n\n");
             int j = 1;
