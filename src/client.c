@@ -8,6 +8,16 @@
 #include <unistd.h>
 #include "common.h"
 
+// [NEW CODE - Typewriter function for animated reveal]
+void typewriter(const char *text, int delay_ms) {
+    if (text == NULL) return;
+    for (int i = 0; text[i] != '\0'; i++) {
+        printf("%c", text[i]);
+        fflush(stdout);
+        usleep(delay_ms * 1000);
+    }
+    printf("\n");
+}
 
 int main(int argc,  char *argv[]){
     
@@ -47,64 +57,47 @@ int main(int argc,  char *argv[]){
 
     printf("Connection successful!\n");
 
+    // Receive initial welcome message
+    n = recv(client_sock, &game, sizeof(game), 0);
+    if(n < 0) die_with_error("Error: Server Disconnected...\n");
+    typewriter(game.message, 30);
 
-
-
-
-// Recieve game state of the dice roll from server
-        n = recv(client_sock, &game, sizeof(game), 0);
-        if(n < 0){
-                die_with_error("Error: Server Disconnected...\n");
-        }
-
-   // 1. PREPARATION PHASE -- Dice roll results from server
-    printf("\n%s\n", game.message);
+    /* [OLD DISCARDED CODE - Initial Dice Roll (Turn order is now round-by-round)]
     printf("\n--- DICE ROLL RESULT ---\n");
     printf("You (P2) rolled: %d\n", game.p2_roll);
     printf("Opponent (P1) rolled: %d\n", game.p1_roll); 
     printf("------------------------\n\n");
-
-    // turn_winner from server
-    if (game.turn_winner == 2) {
-        printf("You (P2) go first!\n");
-    } else {
-        printf("AIN'T NO WAAAYY, opponent (P1) goes first!\n");
-    }
+    */
 
     // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
+                // Receive round start header (contains Arcane Tactics title)
                 n = recv(client_sock, &game, sizeof(game), 0);
                 if(n < 0){
                     die_with_error("Error: Server Disconnected...\n");
                     break;
                 }
 
-                printf("\n------------------------------------\n");
-                printf( "%s", game.message);
-                printf("\n------------------------------------\n");
-
-                printf("Your HP: %d,     Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
-                printf("Opponent HP: %d, Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+                // [NEW/ALTERED CODE - Unified UI Print]
+                printf("%s", game.message);
+                printf("Your HP: %d | Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+                printf("Opponent HP: %d | Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
                 
-                int j = 1;
                 printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
-                    printf("[%d] %s (DMG:%d, UTIL:%d, COST:%d)\n", j,
+                    printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d, PRIO:%d)\n", i + 1,
                     game.p2_status.hand[i].name,
                     game.p2_status.hand[i].damage,
                     game.p2_status.hand[i].utility,
-                    game.p2_status.hand[i].cost);
-                    j++;
-            }
+                    game.p2_status.hand[i].cost,
+                    game.p2_status.hand[i].priority);
+                }
 
             // NEW: CONTINUOUS VALIDATION LOOP 
             int p2_valid = 0;
             while (!p2_valid) {
-                if(game.turn_winner == 2){
-                    printf("\n< You(P2) go first. Select card index (0 to Skip) >> ");
-                } else {
-                    printf("\nOpponent (P1) goes first, Then enter next move (0 to Skip) >> ");
-                }
+                // [NEW/ALTERED CODE - Generic prompt because order is unknown]
+                printf("\n< Select card index (0 to Skip) >> ");
 
                 //Send updates to server 
                 bzero(buffer, sizeof(buffer));
@@ -122,7 +115,6 @@ int main(int argc,  char *argv[]){
                     printf("[!] Not enough energy or invalid choice! Try again.\n");
                 }
             }
-            // end new
 
             // Receive combat resolution from server
             n = recv(client_sock, &game, sizeof(game), 0);
@@ -130,9 +122,14 @@ int main(int argc,  char *argv[]){
                 die_with_error("Error: Server Disconnected...\n");
                 break;
             }
-            printf("%s", game.message);
+            
+            // [NEW/ALTERED CODE - Animated Typewriter Output]
+            // Apply P2 perspective before displaying on client side
+            char client_log[1024];
+            apply_perspective(game.message, client_log, 0); // 0 = P2 = "You"
+            typewriter(client_log, 20);
 
-            // Receive updated game state wiht new cards
+            // Receive updated game state with new cards
             n = recv(client_sock, &game, sizeof(game), 0);
             if(n < 0){
                 die_with_error("Error: Server Disconnected...\n");
