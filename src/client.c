@@ -80,7 +80,7 @@ int main(int argc,  char *argv[]){
 
                 // [NEW/ALTERED CODE - Unified UI Print]
                 printf("%s", game.message);
-                printf("Your HP: %d | Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+                printf("Your HP: %d | Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
                 printf("Opponent HP: %d | Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
                 
                 printf(" \n---- YOUR HAND ---- \n\n");

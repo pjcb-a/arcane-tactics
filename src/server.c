@@ -113,8 +113,8 @@ int main(int argc, char *argv[]){
                                   round_num, (round_num > 5) ? "        ⚡ MANA SURGE ACTIVE! ⚡       \n" : "");
             send(client_sock, &game, sizeof(game), 0);
 
-            printf("Your HP: %d,   Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
-            printf("Opponent's HP: %d,   Opponent's Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+            printf("Your HP: %d | Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+            printf("Opponent's HP: %d | Opponent's Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
 
             printf(" \n---- YOUR HAND ---- \n\n");
             int j = 1;

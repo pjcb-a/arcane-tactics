@@ -233,8 +233,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         float final_damage = card.damage;
 
         // Apply Aura Buff (if active)
-        if (caster->aura_active > 0) {
-            caster->aura_active = 0; 
+        if (caster->aura_active > 0) { 
             if (rand() % 100 < 31) { // 30% chance roughly
                     sprintf(temp, "PLUS AURA! 2x Damage buff triggered!\n");
                 if (strlen(combat_log) + strlen(temp) < 1023) {
@@ -245,7 +244,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
                 }
                 final_damage *= 2.0f;
             }
-        
+            caster->aura_active = 0;
         }
 
         // Apply Shackle Debuff (if active)
