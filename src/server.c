@@ -272,8 +272,10 @@ int main(int argc, char *argv[]){
             }
 
             // client message
+            char client_combat[1024];
+            apply_perspective(combat_log, client_combat, 0);
             char client_full[1280];
-            snprintf(client_full, sizeof(client_full), "%s%s", client_gamble, combat_log);
+            snprintf(client_full, sizeof(client_full), "%s%s", client_gamble, client_combat);
             strcpy(game.message, client_full);
             send(client_sock, &game, sizeof(game), 0);
 

@@ -128,9 +128,9 @@ int main(int argc,  char *argv[]){
             
             // [NEW/ALTERED CODE - Animated Typewriter Output]
             // Apply P2 perspective before displaying on client side
-            char client_log[1024];
-            apply_perspective(game.message, client_log, 0); // 0 = P2 = "You"
-            typewriter(client_log, 20);
+            // char client_log[1024];
+            // apply_perspective(game.message, client_log, 0); // 0 = P2 = "You"
+            typewriter(game.message, 20);
 
             // Receive updated game state with new cards
             n = recv(client_sock, &game, sizeof(game), 0);

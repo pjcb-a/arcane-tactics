@@ -20,7 +20,7 @@ const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
     {"Barrier", 0, 18, 2, 0}, // add 18 shield
     {"Psychic", 2, 0, 1, 0}, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
     {"Rejuvenate", 0, 10, 1, 0}, // regen 10hp
-    {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a 30% chance to deal 2x damage
+    {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a guaranteed chance to deal 2x damage
     {"Arcane Gambit", 10, 20, 1, 0}, // 50/50 chance to heal 20 hp or deal 10 dmg to yourself
 
     // EMPTY SKIP MOVE TO SKIP TURN 
@@ -179,39 +179,39 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         caster->shield += card.utility;
         sprintf(temp, "Status: %s gained %d Shield!\n", caster_name, card.utility);
         safe_append_log(combat_log, temp);
-    } 
+    }
+    
+    if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
+        caster->hp += card.utility;
+        if (caster->hp > MAX_HP) caster->hp = MAX_HP;
+        sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
+        safe_append_log(combat_log, temp);
+    }
 
     // 3. CALCULATE AND APPLY DAMAGE
     if (card.damage > 0) {
         float final_damage = card.damage;
-        
-        if (caster->aura_active > 0) { 
-            if (rand() % 100 < 31) { 
-                safe_append_log(combat_log, "PLUS AURA! 2x Damage buff triggered!\n");
-                final_damage *= 2.0f;
-            }
-            caster->aura_active = 0;
-        }
-        
+
         if (caster->shackle_turns > 0) {
-            sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
+            sprintf(temp, "Status: %s cannot attack freely - Shackled! %s's damage is reduced by %d.\n", caster_name, caster_name, caster->shackle_damage);
             final_damage -= caster->shackle_damage;
             safe_append_log(combat_log, temp);
+            caster->shackle_turns = 0;
 
             if (final_damage < 0) {
                 final_damage = 0;
             }
         }
 
+        if (caster->aura_active > 0) { 
+            safe_append_log(combat_log, "PLUS AURA! 2x Damage buff triggered!\n");
+            final_damage *= 2.0f;
+            caster->aura_active = 0;
+        }
+        
         int dmg_int = (int)final_damage;
         if (dmg_int > 0) {
-            if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
-                caster->hp += card.utility;
-                if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-                sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
-                safe_append_log(combat_log, temp);
-            }
-
+            
             if (target->shield > 0) {
                 if (target->shield >= dmg_int) {
                     target->shield -= dmg_int;
@@ -261,7 +261,6 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         }
         safe_append_log(combat_log, temp);
     }
-    caster->shackle_turns = 0; 
 }
 
 
