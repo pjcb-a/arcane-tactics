@@ -72,4 +72,5 @@ int is_full(ActionQueue *q);
 void enqueue(ActionQueue *q, Action data);
 Action dequeue(ActionQueue *q);
 void apply_perspective(const char *log, char *out, int is_p1);
+void get_ui_elements(Player *p, char *hp_bar, char *status_str);
 #endif

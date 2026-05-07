@@ -11,10 +11,10 @@ const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
 
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
     {"Laser Beam", 10, 0, 1, 0}, // light atk
-    {"Comet", 25, 0, 2, 0}, // heavy atk
-    {"Lightning Flash", 8, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
-    {"Shackle", 5, 1, 1, 0}, // enemy deals -8 damage next atk
-    {"Life Drain", 10, 10, 2, 0}, // 10 dmg and 10 heal
+    {"Comet", 35, 0, 2, 0}, // heavy atk
+    {"Lightning Flash", 12, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
+    {"Shackle", 7, 1, 1, 0}, // enemy deals -8 damage next atk
+    {"Life Drain", 20, 10, 2, 0}, // 10 dmg and 10 heal
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
     {"Barrier", 0, 18, 2, 0}, // add 18 shield
@@ -44,6 +44,27 @@ int dice_roll(int *p1_roll, int *p2_roll){
     return (*p1_roll > *p2_roll) ? 1 : 2; // return p1 win else p2 win
 }
 
+// hp bar ui
+void get_ui_elements(Player *p, char *hp_bar, char *status_str) {
+    int filled = (p->hp * 20) / MAX_HP; // 20-character wide HP bar
+    if (filled < 0) filled = 0;
+    
+    strcpy(hp_bar, "[");
+    for(int i = 0; i < 20; i++) {
+        if(i < filled) strcat(hp_bar, "#");
+        else strcat(hp_bar, "-");
+    }
+    strcat(hp_bar, "]");
+
+    strcpy(status_str, "");
+    if (p->stun_turns > 0) strcat(status_str, "[STUNNED] ");
+    if (p->shackle_turns > 0) strcat(status_str, "[SHACKLED] ");
+    if (p->aura_active > 0) strcat(status_str, "[AURA] ");
+    
+    // If no statuses are active, display NONE
+    if (strlen(status_str) == 0) strcpy(status_str, "[NONE]");
+}
+
 
 // the random card giver function to each player at the start of the game and when they draw cards
 // mechanics.c
@@ -56,7 +77,6 @@ void draw_card(Player *player, int num_cards) { // new rolling system that limit
         int is_duplicate_limit_reached;
         int attempts = 0;
 
-        // [NEW CODE - Duplicate Limit Logic]
         do {
             is_duplicate_limit_reached = 0;
             int card_index = rand() % 10; // Equal chance for all 10 cards
@@ -84,72 +104,45 @@ void draw_card(Player *player, int num_cards) { // new rolling system that limit
     }
 }
 
-// P1 perspective (P1="You", P2="Opponent")
-// P2 perspective (P2="You", P1="Opponent")
+// Helper Function for overflow checks
+static void safe_append_log(char *combat_log, const char *new_text) {
+    if (strlen(combat_log) + strlen(new_text) < 1023) {
+        strcat(combat_log, new_text);
+    } else {
+        // Only add truncated marker once
+        if (strstr(combat_log, "[TRUNCATED]") == NULL) {
+            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
+        }
+    }
+}
+
+
 void apply_perspective(const char *log, char *out, int is_p1) {
-    const char *self_tag   = is_p1 ? "P1" : "P2";
-    const char *enemy_tag  = is_p1 ? "P2" : "P1";
+    const char *self_tag = is_p1 ? "P1" : "P2";
+    const char *enemy_tag = is_p1 ? "P2" : "P1";
+    int out_i = 0, len = strlen(log);
 
-    int out_i = 0;
-    int len = strlen(log);
-
-    for (int i = 0; i < len && out_i < 1022; i++) {
-
-        // checks the s in P1's or P2's first
-        if (strncmp(log + i, is_p1 ? "P1's" : "P2's", 4) == 0) {
-            const char *sub = "Your";
-            int sub_len = strlen(sub);
-            if (out_i + sub_len < 1023) {
-                strncpy(out + out_i, sub, sub_len);
-                out_i += sub_len;
-                i += 3;
-                continue;
-            }
+    for (int i = 0; i < len && out_i < 1020; i++) {
+        // Check for "P1's" or "P2's" (Possessive)
+        if (strncmp(log + i, self_tag, 2) == 0 && log[i+2] == '\'' && log[i+3] == 's') {
+            strcpy(out + out_i, "Your");
+            out_i += 4; i += 3; continue;
         }
-        if (strncmp(log + i, is_p1 ? "P2's" : "P1's", 4) == 0) {
-            const char *sub = "Opponent's";
-            int sub_len = strlen(sub);
-            if (out_i + sub_len < 1023) {
-                strncpy(out + out_i, sub, sub_len);
-                out_i += sub_len;
-                i += 3;
-                continue;
-            }
+        if (strncmp(log + i, enemy_tag, 2) == 0 && log[i+2] == '\'' && log[i+3] == 's') {
+            strcpy(out + out_i, "Opponent's");
+            out_i += 10; i += 3; continue;
         }
 
-        // Try to match self_tag first
+        // Check for "P1" or "P2" (Subject)
         if (strncmp(log + i, self_tag, 2) == 0) {
-            // Make sure it is not part of a longer word
-            char before = (i > 0) ? log[i - 1] : ' ';
-            char after  = log[i + 2];
-            int boundary = !isalnum((unsigned char)before) && !isalnum((unsigned char)after);
-            if (boundary) {
-                const char *sub = "You";
-                int sub_len = strlen(sub);
-                if (out_i + sub_len < 1023) {
-                    strncpy(out + out_i, sub, sub_len);
-                    out_i += sub_len;
-                    i += 1; // skip 2nd char of tag
-                    continue;
-                }
-            }
+            strcpy(out + out_i, "You");
+            out_i += 3; i += 1; continue;
         }
-        // Try to match enemy tag p2 or p1 depending on perspective
         if (strncmp(log + i, enemy_tag, 2) == 0) {
-            char before = (i > 0) ? log[i - 1] : ' ';
-            char after  = log[i + 2];
-            int boundary = !isalnum((unsigned char)before) && !isalnum((unsigned char)after);
-            if (boundary) {
-                const char *sub = "Opponent";
-                int sub_len = strlen(sub);
-                if (out_i + sub_len < 1023) {
-                    strncpy(out + out_i, sub, sub_len);
-                    out_i += sub_len;
-                    i += 1;
-                    continue;
-                }
-            }
+            strcpy(out + out_i, "Opponent");
+            out_i += 8; i += 1; continue;
         }
+
         out[out_i++] = log[i];
     }
     out[out_i] = '\0';
@@ -159,211 +152,118 @@ void apply_perspective(const char *log, char *out, int is_p1) {
 
 // Execute all card logic
 void execute_card(Player *caster, Player *target, Card card, int is_player, char *combat_log) {
-    
-    char temp[512];
-    // Easy naming conventions for calling 
+    char temp[256];
     char *caster_name = is_player ? "P1" : "P2";
     char *target_name = is_player ? "P2" : "P1";
 
-    if (strcmp(card.name, "Skip") == 0) { // SKIP CHECK!!!
-    sprintf(temp, ">>> %s decided to skip this turn and conserve energy.\n", caster_name);
-    // check for potential overflow
-        if (strlen(combat_log) + strlen(temp) < 1023) {
-            strcat(combat_log, temp);
-        } else {
-            // marker that the log was truncated
-            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-        }
-    return; // Exit early so no other damage/logic happens
-}
-        sprintf(temp, "\n--- %s used [%s]! ---\n", caster_name, card.name);
-         if (strlen(combat_log) + strlen(temp) < 1023) {
-            strcat(combat_log, temp);
-        } else {
-            // marker that the log was truncated
-            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-        }
+    // Handle Skip early
+    if (strcmp(card.name, "Skip") == 0) {
+        sprintf(temp, ">>> %s decided to skip this turn and conserve energy.\n", caster_name);
+        safe_append_log(combat_log, temp);
+        return;
+    }
 
-    // -----------------------
+    sprintf(temp, "\n--- %s used [%s]! ---\n", caster_name, card.name);
+    safe_append_log(combat_log, temp);
+
     // 1. PRE-ATTACK CHECKS 
-    // -----------------------
     if (caster->stun_turns > 0) {
-            sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", caster_name);
-             if (strlen(combat_log) + strlen(temp) < 1023) {
-            strcat(combat_log, temp);
-        } else {
-            // marker that the log was truncated
-            strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-        }
-        caster->stun_turns = 0; // Remove stun
-        return; // EXIT FUNCTION: Card does nothing
+        sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", caster_name);
+        safe_append_log(combat_log, temp);
+        caster->stun_turns = 0; 
+        return; 
     }
 
-    // --------------------
-    // 2. APPLY UTILITY 
-    // --------------------
-    if (card.utility > 0) {
-        if (strcmp(card.name, "Barrier") == 0) {
-            caster->shield += card.utility;
-                sprintf(temp, "Status: %s gained %d Shield!\n", caster_name, card.utility);
-                 if (strlen(combat_log) + strlen(temp) < 1023) {
-                    strcat(combat_log, temp);
-                } else {
-                    // marker that the log was truncated
-                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                }
-        } 
-        else if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
-            caster->hp += card.utility;
-            if (caster->hp > MAX_HP) caster->hp = MAX_HP; // Prevent overheal
-                sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
-                        if (strlen(combat_log) + strlen(temp) < 1023) {
-                    strcat(combat_log, temp);
-                } else {
-                    // marker that the log was truncated
-                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                }
-    }
-}
+    // 2. APPLY UTILITY (Healing & Shields)
+    if (strcmp(card.name, "Barrier") == 0) {
+        caster->shield += card.utility;
+        sprintf(temp, "Status: %s gained %d Shield!\n", caster_name, card.utility);
+        safe_append_log(combat_log, temp);
+    } 
 
-    // ------------------------------
     // 3. CALCULATE AND APPLY DAMAGE
-    // ------------------------------
     if (card.damage > 0) {
         float final_damage = card.damage;
-
-        // Apply Aura Buff (if active)
+        
         if (caster->aura_active > 0) { 
-            if (rand() % 100 < 31) { // 30% chance roughly
-                    sprintf(temp, "PLUS AURA! 2x Damage buff triggered!\n");
-                if (strlen(combat_log) + strlen(temp) < 1023) {
-                    strcat(combat_log, temp);
-                } else {
-                    // marker that the log was truncated
-                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                }
+            if (rand() % 100 < 31) { 
+                safe_append_log(combat_log, "PLUS AURA! 2x Damage buff triggered!\n");
                 final_damage *= 2.0f;
             }
             caster->aura_active = 0;
         }
-
-        // Apply Shackle Debuff (if active)
+        
         if (caster->shackle_turns > 0) {
-                sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
-                 if (strlen(combat_log) + strlen(temp) < 1023) {
-                    strcat(combat_log, temp);
-                } else {
-                    // marker that the log was truncated
-                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                }
+            sprintf(temp, "Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
             final_damage -= caster->shackle_damage;
-            caster->shackle_turns = 0; // consume shackle
-            if (final_damage < 0) final_damage = 0; // No negative damage
+            safe_append_log(combat_log, temp);
+            
+            if (final_damage < 0) {
+                final_damage = 0;
+            }
         }
 
-        // Apply Damage to Shield first, then HP
         int dmg_int = (int)final_damage;
         if (dmg_int > 0) {
+            if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
+                caster->hp += card.utility;
+                if (caster->hp > MAX_HP) caster->hp = MAX_HP;
+                sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
+                safe_append_log(combat_log, temp);
+            }
+
             if (target->shield > 0) {
                 if (target->shield >= dmg_int) {
                     target->shield -= dmg_int;
-                        sprintf(temp, "%s's Shield absorbed %d damage! (Shield left: %d)\n", target_name, dmg_int, target->shield);
-                    if (strlen(combat_log) + strlen(temp) < 1023) {
-                        strcat(combat_log, temp);
-                    } else {
-                        // marker that the log was truncated
-                        strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                    }
-                    dmg_int = 0; // Damage fully absorbed
+                    sprintf(temp, "%s's Shield absorbed %d damage! (Remaining: %d)\n", target_name, dmg_int, target->shield);
+                    dmg_int = 0;
                 } else {
-                        sprintf(temp, "%s's Shield absorbed %d damage, but broke!\n", target_name, target->shield);
-                         if (strlen(combat_log) + strlen(temp) < 1023) {
-                        strcat(combat_log, temp);
-                    } else {
-                        // marker that the log was truncated
-                        strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                    }
+                    sprintf(temp, "%s's Shield broke! %d damage bypassed.\n", target_name, target->shield);
                     dmg_int -= target->shield;
                     target->shield = 0;
                 }
+                safe_append_log(combat_log, temp);
             }
             
-            // Remaining damage hits HP
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
-                    sprintf(temp, "%s took %d damage!\n", target_name, dmg_int);
-                     if (strlen(combat_log) + strlen(temp) < 1023) {
-                    strcat(combat_log, temp);
-                } else {
-                    // marker that the log was truncated
-                    strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-                }
+                sprintf(temp, "%s took %d damage!\n", target_name, dmg_int);
+                safe_append_log(combat_log, temp);
             }
         }
     }
-
-    // ------------------------------------------
-    // 4. APPLY SPECIAL STATUS EFFECTS TO TARGET
-    // --------------------------------------------
-    if (strcmp(card.name, "Psychic") == 0) {
-        if (rand() % 100 < 31) { // 30% chance
-            target->stun_turns = 1;
-                sprintf(temp, "Status: %s cannot move next turn — STUNNED!\n", target_name);
-                 if (strlen(combat_log) + strlen(temp) < 1023) {
-                strcat(combat_log, temp);
-            } else {
-                // marker that the log was truncated
-                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-            }
-        }
+    
+    // 4. SPECIAL STATUS EFFECTS
+    if (strcmp(card.name, "Psychic") == 0 && (rand() % 100 < 31)) {
+        target->stun_turns = 1;
+        sprintf(temp, "Status: %s is STUNNED!\n", target_name);
+        safe_append_log(combat_log, temp);
     } 
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
-            sprintf(temp, "Status: %s cannot attack freely - Shackled!\n", target_name);
-            if (strlen(combat_log) + strlen(temp) < 1023) {
-                strcat(combat_log, temp);
-            } else {
-                // marker that the log was truncated
-                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-            }
+        sprintf(temp, "Status: %s is Shackled!\n", target_name);
+        safe_append_log(combat_log, temp);
     }
-
     else if (strcmp(card.name, "Aura Stance") == 0) {
         caster->aura_active = 1;
-            sprintf(temp, "Status: %s entered Aura Stance!\n", caster_name);
-            if (strlen(combat_log) + strlen(temp) < 1023) {
-                strcat(combat_log, temp);
-            } else {
-                // marker that the log was truncated
-                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-            }
+        sprintf(temp, "Status: %s entered Aura Stance!\n", caster_name);
+        safe_append_log(combat_log, temp);
     }
-
     else if (strcmp(card.name, "Arcane Gambit") == 0) {
         if (rand() % 100 < 50) {
             caster->hp += 20;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-                sprintf(temp, "Gambit Success: %s healed for 20 HP!\n", caster_name);
-                if (strlen(combat_log) + strlen(temp) < 1023) {
-                strcat(combat_log, temp);
-            } else {
-                // marker that the log was truncated
-                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-            }
-
+            sprintf(temp, "Gambit Success: %s healed for 20 HP!\n", caster_name);
         } else {
             caster->hp -= 10;
-                sprintf(temp, "Gambit Fail: %s took 10 recoil damage!\n", caster_name);
-                if (strlen(combat_log) + strlen(temp) < 1023) {
-                strcat(combat_log, temp);
-            } else {
-                // marker that the log was truncated
-                strncpy(combat_log + 1010, "...[TRUNCATED]", 14);
-            }
+            sprintf(temp, "Gambit Fail: %s took 10 recoil damage!\n", caster_name);
         }
+        safe_append_log(combat_log, temp);
     }
+    caster->shackle_turns = 0; 
 }
+
 
 // Removes a card from hand, shifts remaining cards left
 void remove_card(Player *player, int card_index) {

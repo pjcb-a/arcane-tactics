@@ -69,18 +69,13 @@ int main(int argc, char *argv[]){
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
     game.p1_status.hand_count = 0;
+    char my_hp[32], my_stat[64];
 
     game.p2_status.hp = MAX_HP;
     game.p2_status.energy = START_ENERGY;
     game.p2_status.hand_count = 0;
+    char op_hp[32], op_stat[64];
 
-
-   // 1. PREPARATION PHASE
-    /* [OLD DISCARDED CODE - Initial Dice Roll (Turn order now happens every round)]
-    game.turn_winner = dice_roll(&game.p1_roll, &game.p2_roll); 
-    */
-
-    // [NEW CODE - Generic Welcome]
     sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
 
     // Send initial game state
@@ -100,7 +95,7 @@ int main(int argc, char *argv[]){
             printf("\n========================================\n");
             printf("             ARCANE TACTICS             \n");
             printf("               ROUND %d                 \n", round_num);
-            if (round_num > 5) printf("        ⚡ MANA SURGE ACTIVE! ⚡       \n");
+            if (round_num > 5) printf("         MANA SURGE ACTIVE!        \n");
             printf("========================================\n");
 
             // [NEW/ALTERED CODE - Send Round Header to Client via game.message]
@@ -110,11 +105,16 @@ int main(int argc, char *argv[]){
                                   "               ROUND %d                 \n"
                                   "%s"
                                   "========================================\n", 
-                                  round_num, (round_num > 5) ? "        ⚡ MANA SURGE ACTIVE! ⚡       \n" : "");
+                                  round_num, (round_num > 5) ? "         MANA SURGE ACTIVE!        \n" : "");
             send(client_sock, &game, sizeof(game), 0);
 
-            printf("Your HP: %d | Your Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
-            printf("Opponent's HP: %d | Opponent's Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
+            get_ui_elements(&game.p1_status, my_hp, my_stat);
+            get_ui_elements(&game.p2_status, op_hp, op_stat);
+
+            printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, my_stat);
+            printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, op_stat);
+            printf("Your Energy: %d | Opponent Energy: %d\n", game.p1_status.energy, game.p2_status.energy);
+
 
             printf(" \n---- YOUR HAND ---- \n\n");
             int j = 1;
@@ -249,6 +249,10 @@ int main(int argc, char *argv[]){
             memset(combat_log, 0, sizeof(combat_log));
 
             for (int k = 0; k < 2; k++) {
+                if(game.p1_status.hp <= 0 || game.p2_status.hp <= 0){
+                    break;
+                }
+
                 Action current_move;
                 if (!is_empty(&priority_queue)) {
                     current_move = dequeue(&priority_queue);

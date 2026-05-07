@@ -27,7 +27,10 @@ int main(int argc,  char *argv[]){
     char buffer[32];
 
     GameState game;
-
+    char my_hp[32], op_hp[32];
+    char my_stat[64], op_stat[64];
+    
+    
     if (argc < 3) {
         printf("Usage: %s hostname port_no", argv[0]);
         exit(1);
@@ -62,12 +65,6 @@ int main(int argc,  char *argv[]){
     if(n < 0) die_with_error("Error: Server Disconnected...\n");
     typewriter(game.message, 30);
 
-    /* [OLD DISCARDED CODE - Initial Dice Roll (Turn order is now round-by-round)]
-    printf("\n--- DICE ROLL RESULT ---\n");
-    printf("You (P2) rolled: %d\n", game.p2_roll);
-    printf("Opponent (P1) rolled: %d\n", game.p1_roll); 
-    printf("------------------------\n\n");
-    */
 
     // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
@@ -80,8 +77,14 @@ int main(int argc,  char *argv[]){
 
                 // [NEW/ALTERED CODE - Unified UI Print]
                 printf("%s", game.message);
-                printf("Your HP: %d | Your Energy: %d\n", game.p2_status.hp, game.p2_status.energy);
-                printf("Opponent HP: %d | Opponent Energy: %d\n", game.p1_status.hp, game.p1_status.energy);
+
+                get_ui_elements(&game.p2_status, my_hp, my_stat);
+                get_ui_elements(&game.p1_status, op_hp, op_stat);
+
+                printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, my_stat);
+                printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, op_stat);
+                printf("Your Energy: %d | Opponent Energy: %d\n", game.p2_status.energy, game.p1_status.energy);
+
                 
                 printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
