@@ -194,10 +194,10 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         }
         
         if (caster->shackle_turns > 0) {
-            sprintf(temp, "Status: %s is Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
+            sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", caster_name, caster->shackle_damage);
             final_damage -= caster->shackle_damage;
             safe_append_log(combat_log, temp);
-            
+
             if (final_damage < 0) {
                 final_damage = 0;
             }
@@ -236,13 +236,13 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     // 4. SPECIAL STATUS EFFECTS
     if (strcmp(card.name, "Psychic") == 0 && (rand() % 100 < 31)) {
         target->stun_turns = 1;
-        sprintf(temp, "Status: %s is STUNNED!\n", target_name);
+        sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", target_name);
         safe_append_log(combat_log, temp);
     } 
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
-        sprintf(temp, "Status: %s is Shackled!\n", target_name);
+        sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", target_name, target->shackle_damage);
         safe_append_log(combat_log, temp);
     }
     else if (strcmp(card.name, "Aura Stance") == 0) {

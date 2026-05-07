@@ -230,20 +230,22 @@ int main(int argc, char *argv[]){
             // Perspective gamble winner
             const char *server_winner = (game.turn_winner == 1) ? "You" : "Opponent";
             const char *client_winner = (game.turn_winner == 2) ? "You" : "Opponent";
+            const char *server_grammar = (game.turn_winner == 1) ? "go" : "goes";
+            const char *client_grammar = (game.turn_winner == 2) ? "go" : "goes";
 
             char server_gamble[256];
             sprintf(server_gamble, "\n------- TURN GAMBLE -------\n"
                                 "You rolled: %d, Opponent rolled: %d\n"
-                                "Winner: %s goes first!\n"
+                                "Winner: %s %s first!\n"
                                 "---------------------------\n",
-                                game.p1_roll, game.p2_roll, server_winner);
+                                game.p1_roll, game.p2_roll, server_winner, server_grammar);
 
             char client_gamble[256];
             sprintf(client_gamble, "\n------- TURN GAMBLE -------\n"
                                 "You rolled: %d, Opponent rolled: %d\n"
-                                "Winner: %s goes first!\n"
+                                "Winner: %s %s first!\n"
                                 "---------------------------\n",
-                                game.p2_roll, game.p1_roll, client_winner);
+                                game.p2_roll, game.p1_roll, client_winner, client_grammar);
 
             char combat_log[1024];
             memset(combat_log, 0, sizeof(combat_log));
