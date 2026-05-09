@@ -37,10 +37,12 @@ typedef struct {
 typedef struct {
     Player p1_status; // Server
     Player p2_status; // Client
-    char message[1024]; // game messages increased from 512
+    char message[2048]; // game messages increased from 512
     int p1_roll;
     int p2_roll;
     int turn_winner;
+    int deck[40];
+    int deck_ptr;
 } GameState;
 
 // Queue logic for card prio and dmg distribution with DSA source code
@@ -60,7 +62,8 @@ typedef struct {
 
 
 void die_with_error(char *error_msg);
-void draw_card(Player *player, int num_cards);
+void shuffle_deck(GameState *game);
+void draw_card(Player *player, GameState *game, int num_cards);
 void execute_card(Player *caster, Player *target, Card card, int is_player, char *combat_log);
 void card_move(Player *player, Card card);
 void remove_card(Player *player, int card_index);

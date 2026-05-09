@@ -64,6 +64,7 @@ int main(int argc, char *argv[]){
 
     GameState game;
     memset(&game, 0, sizeof(GameState));
+    shuffle_deck(&game);
 
     // Initialize game state for both players (server and client)
     game.p1_status.hp = MAX_HP;
@@ -83,13 +84,13 @@ int main(int argc, char *argv[]){
 
     typewriter(game.message, 30); // typewriter anim
 
-    draw_card(&game.p1_status, START_HAND_SIZE);
-    draw_card(&game.p2_status, START_HAND_SIZE);
+    draw_card(&game.p1_status,&game, START_HAND_SIZE);
+    draw_card(&game.p2_status, &game, START_HAND_SIZE);
 
     // 2. GAME PHASE -- Actual loop of the game
     while (game.p1_status.hp > 0 && game.p2_status.hp > 0) {
-            game.p1_status.shield = 0; // Reset P1 shield for the new round
-            game.p2_status.shield = 0; // Reset P2 shield for the new round
+            // game.p1_status.shield = 0; // Reset P1 shield for the new round
+            // game.p2_status.shield = 0; // Reset P2 shield for the new round
 
             // [NEW/ALTERED CODE - Unified Header for Server with scaling energy info]
             printf("\n========================================\n");
@@ -292,8 +293,8 @@ int main(int argc, char *argv[]){
             if (p1_choice != -1) remove_card(&game.p1_status, p1_choice);
             if (p2_choice != -1) remove_card(&game.p2_status, p2_choice);
             
-            draw_card(&game.p1_status, 1);
-            draw_card(&game.p2_status, 1);
+            draw_card(&game.p1_status, &game, 1);
+            draw_card(&game.p2_status, &game, 1);
             
             // scaling energy regen:
             // round 1-5 = +1 energy, round 6 onwards = +2 energy
@@ -313,7 +314,20 @@ int main(int argc, char *argv[]){
             send(client_sock, &game, sizeof(game), 0);
             }
 
-    close(client_sock);
+            memset(game.message, 0, sizeof(game.message));
+            if (game.p1_status.hp <= 0 && game.p2_status.hp <= 0) {
+                sprintf(game.message, "\n=== DRAW! Both players have fallen! ===\n");
+            } else if (game.p2_status.hp <= 0) {
+                sprintf(game.message, "\n=== VICTORY! You defeated the opponent! ===\n");
+            } else {
+                sprintf(game.message, "\n=== DEFEAT! You were struck down! ===\n");
+            }
+
+            send(client_sock, &game, sizeof(game), 0);
+            printf("%s", game.message);
+        usleep(500000);
+    
+        close(client_sock);
     close(server_sock);
     return 0; 
 }

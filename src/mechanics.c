@@ -12,12 +12,12 @@ const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
     {"Laser Beam", 15, 0, 1, 0}, // light atk
     {"Comet", 35, 0, 2, 0}, // heavy atk
-    {"Lightning Flash", 12, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
+    {"Lightning Flash", 16, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
     {"Shackle", 8, 1, 1, 0}, // enemy deals -8 damage next atk
-    {"Life Drain", 15, 10, 2, 0}, // 10 dmg and 10 heal
+    {"Life Drain", 15, 10, 2, 0}, // 15 dmg and 10 heal
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
-    {"Barrier", 0, 18, 2, 0}, // add 18 shield
+    {"Barrier", 0, 18, 2, 1}, // add 18 shield
     {"Psychic", 5, 0, 1, 0}, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
     {"Rejuvenate", 0, 10, 1, 0}, // regen 10hp
     {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a guaranteed chance to deal 2x damage
@@ -66,41 +66,40 @@ void get_ui_elements(Player *p, char *hp_bar, char *status_str) {
 }
 
 
-// the random card giver function to each player at the start of the game and when they draw cards
+// the random card giver/shuffler function to each player at the start of the game and when they draw cards
 // mechanics.c
 
-void draw_card(Player *player, int num_cards) { // new rolling system that limits each player to only have two of each card
+void shuffle_deck(GameState *game) {
+    for (int i = 0; i < 40; i++) {
+        game->deck[i] = i % 11; 
+    }
+
+    // 2. Fisher-Yates Shuffle
+    for (int i = 39; i > 0; i--) {
+        int j = rand() % (i + 1);
+        // Swap deck[i] with deck[j]
+        int temp = game->deck[i];
+        game->deck[i] = game->deck[j];
+        game->deck[j] = temp;
+    }
+    game->deck_ptr = 0; // Reset pointer to the top of the deck
+}
+
+void draw_card(Player *player, GameState *game, int num_cards) {
     for (int i = 0; i < num_cards; i++) {
-        if (player->hand_count >= MAX_HAND_SIZE) break;
-
-        Card drawn_card;
-        int is_duplicate_limit_reached;
-        int attempts = 0;
-
-        do {
-            is_duplicate_limit_reached = 0;
-            int card_index = rand() % 10; // Equal chance for all 10 cards
-            drawn_card = Card_Pool[card_index];
-
-            int count = 0;
-            for (int j = 0; j < player->hand_count; j++) {
-                if (strcmp(player->hand[j].name, drawn_card.name) == 0) {
-                    count++;
-                }
-            }
-
-            if (count >= 2) {
-                is_duplicate_limit_reached = 1;
-            }
+        if (player->hand_count < MAX_HAND_SIZE) {
+            // Simply take the card the deck_ptr is pointing to
+            int card_id = game->deck[game->deck_ptr];
+            player->hand[player->hand_count] = Card_Pool[card_id];
+            player->hand_count++;
             
-            attempts++;
-            // Safety break to prevent infinite loops if hand is weirdly full
-            if (attempts > 50) break; 
-
-        } while (is_duplicate_limit_reached);
-
-        player->hand[player->hand_count] = drawn_card;
-        player->hand_count++;
+            game->deck_ptr++;
+            
+            // If we run out of cards (40 cards drawn), reshuffle
+            if (game->deck_ptr >= 40) {
+                shuffle_deck(game);
+            }
+        }
     }
 }
 

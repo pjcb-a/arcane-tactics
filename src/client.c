@@ -61,7 +61,7 @@ int main(int argc,  char *argv[]){
     printf("Connection successful!\n");
 
     // Receive initial welcome message
-    n = recv(client_sock, &game, sizeof(game), 0);
+    n = recv(client_sock, &game, sizeof(game), MSG_WAITALL);
     if(n < 0) die_with_error("Error: Server Disconnected...\n");
     typewriter(game.message, 30);
 
@@ -69,13 +69,20 @@ int main(int argc,  char *argv[]){
     // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
                 // Receive round start header (contains Arcane Tactics title)
-                n = recv(client_sock, &game, sizeof(game), 0);
+                n = recv(client_sock, &game, sizeof(game), MSG_WAITALL);
                 if(n < 0){
                     die_with_error("Error: Server Disconnected...\n");
                     break;
                 }
 
-                // [NEW/ALTERED CODE - Unified UI Print]
+
+                if (strstr(game.message, "VICTORY!") || strstr(game.message, "DEFEAT!") || strstr(game.message, "DRAW!")) {
+                    typewriter(game.message, 30);
+                    printf("\nDisconnecting from Server...\n");
+                    break;
+                }
+
+
                 printf("%s", game.message);
 
                 get_ui_elements(&game.p2_status, my_hp, my_stat);
@@ -88,7 +95,7 @@ int main(int argc,  char *argv[]){
                 
                 printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
-                    printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d, PRIO:%d)\n", i + 1,
+                    printf("[%d] %-15s (  DMG: %d, UTIL: %d, COST: %d, PRIO:%d  )\n", i + 1,
                     game.p2_status.hand[i].name,
                     game.p2_status.hand[i].damage,
                     game.p2_status.hand[i].utility,
@@ -110,7 +117,7 @@ int main(int argc,  char *argv[]){
                 // Receive validation from server
                 char status[16];
                 bzero(status, 16);
-                n = recv(client_sock, status, sizeof(status), 0);
+                n = recv(client_sock, status, sizeof(status), MSG_WAITALL);
                 
                 if (n > 0 && strcmp(status, "OK") == 0) {
                     p2_valid = 1; // Server confirmed card is affordable
@@ -120,25 +127,25 @@ int main(int argc,  char *argv[]){
             }
 
             // Receive combat resolution from server
-            n = recv(client_sock, &game, sizeof(game), 0);
+            n = recv(client_sock, &game, sizeof(game), MSG_WAITALL);
             if(n < 0){
                 die_with_error("Error: Server Disconnected...\n");
                 break;
             }
             
             // [NEW/ALTERED CODE - Animated Typewriter Output]
-            // Apply P2 perspective before displaying on client side
-            // char client_log[1024];
+            // Apply P2 perspective before displaying o 
             // apply_perspective(game.message, client_log, 0); // 0 = P2 = "You"
             typewriter(game.message, 20);
 
             // Receive updated game state with new cards
-            n = recv(client_sock, &game, sizeof(game), 0);
+            n = recv(client_sock, &game, sizeof(game), MSG_WAITALL);
             if(n < 0){
                 die_with_error("Error: Server Disconnected...\n");
                 break;
             }
-        }
+
+    }
 
     close(client_sock);
     return 0;
