@@ -2,15 +2,17 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "common.h"
 #include <time.h>
 #include <ctype.h>
+
 
 // ALL CARDS/ABILITIES
 const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
 
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
-    {"Laser Beam", 15, 0, 1, 0}, // light atk
+    {"Laser Beam", 15, 0, 1, 0, "ADD DESC"}, // light atk
     {"Comet", 35, 0, 2, 0}, // heavy atk
     {"Lightning Flash", 16, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
     {"Shackle", 8, 1, 1, 0}, // enemy deals -8 damage next atk
@@ -30,6 +32,29 @@ const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
 void die_with_error(char *error_msg){
     printf("%s", error_msg);
     exit(-1);
+}
+
+void typewriter(const char *text, int delay_ms) {
+    if (text == NULL) return;
+    for (int i = 0; text[i] != '\0'; i++) {
+        printf("%c", text[i]);
+        fflush(stdout); // Forces the letter to print immediately
+        usleep(delay_ms * 1000);
+    }
+    printf("\n");
+}
+
+void display_card_glossary() {
+    printf("\n--- Arcane Tactics : Spellbook ---\n");
+    for (int i = 0; i < 11; i++) {
+        char buffer[256];
+        sprintf(buffer, "[%s] Cost: %d | Prio: %d\n >> %s", 
+                Card_Pool[i].name, Card_Pool[i].cost, 
+                Card_Pool[i].priority, Card_Pool[i].desc);
+        typewriter(buffer, 50);
+        printf("\n");
+    }
+    printf("----------------------------------\n\n");
 }
 
 
@@ -70,11 +95,11 @@ void get_ui_elements(Player *p, char *hp_bar, char *status_str) {
 // mechanics.c
 
 void shuffle_deck(GameState *game) {
-    for (int i = 0; i < 40; i++) {
+    for (int i = 0; i < 33; i++) {
         game->deck[i] = i % 11; 
     }
 
-    // 2. Fisher-Yates Shuffle
+    // optimized card shuffle wherein a card can be shuffled 3 times only
     for (int i = 39; i > 0; i--) {
         int j = rand() % (i + 1);
         // Swap deck[i] with deck[j]

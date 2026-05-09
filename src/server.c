@@ -2,23 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h> 
+#include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h>
 #include "common.h"
 #include <time.h>
-
-// typewriter animation for server side
-void typewriter(const char *text, int delay_ms) {
-    if (text == NULL) return;
-    for (int i = 0; text[i] != '\0'; i++) {
-        printf("%c", text[i]);
-        fflush(stdout); // Forces the letter to print immediately
-        usleep(delay_ms * 1000);
-    }
-    printf("\n");
-}
-
 
 int main(int argc, char *argv[]){
 
@@ -83,6 +71,8 @@ int main(int argc, char *argv[]){
     send(client_sock, &game, sizeof(game), 0);
 
     typewriter(game.message, 30); // typewriter anim
+    
+    display_card_glossary();
 
     draw_card(&game.p1_status,&game, START_HAND_SIZE);
     draw_card(&game.p2_status, &game, START_HAND_SIZE);
@@ -120,12 +110,12 @@ int main(int argc, char *argv[]){
             printf(" \n---- YOUR HAND ---- \n\n");
             int j = 1;
             for(int i = 0; i < game.p1_status.hand_count; i++) {
-                printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d, PRIO:%d)\n", j,
+                printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d)\n", j,
                     game.p1_status.hand[i].name,
                     game.p1_status.hand[i].damage,
                     game.p1_status.hand[i].utility,
-                    game.p1_status.hand[i].cost,
-                    game.p1_status.hand[i].priority);
+                    game.p1_status.hand[i].cost
+                    );
                     j++;
             }
 
@@ -134,10 +124,22 @@ int main(int argc, char *argv[]){
             // P1 (Server) Input Validation Loop
             int p1_valid = 0;
             while (!p1_valid) {
-                printf("\n< Select card index (0 to Skip) >>  ");
+                printf("\n< Select card index (0 to Skip, ?# to inspect Card #) >>  ");
                 fgets(buffer, sizeof(buffer), stdin);
-                p1_choice = atoi(buffer) - 1;
 
+                if (buffer[0] == '?') {
+                    int inspect_idx = atoi(&buffer[1]) - 1; // Read number after '?'
+                    if (inspect_idx >= 0 && inspect_idx < game.p1_status.hand_count) {
+                        printf("\n[INFO] %s: %s\n", 
+                            game.p1_status.hand[inspect_idx].name, 
+                            game.p1_status.hand[inspect_idx].desc);
+                    } else {
+                        printf("[!] Invalid card to inspect.\n");
+                    }
+                    continue; // Skip the rest of the loop and prompt again
+                }
+
+                p1_choice = atoi(buffer) - 1;
                 if (p1_choice == -1) {
                     p1_valid = 1; // Skip is always valid
                 } else if (p1_choice >= 0 && p1_choice < game.p1_status.hand_count) {
@@ -154,6 +156,10 @@ int main(int argc, char *argv[]){
 
             // P2 (Client) Input Validation Loop
             int p2_valid = 0;
+            char reply[16];
+
+
+
             while (!p2_valid) {
                 printf("\nWaiting for opponent's move...\n");
                 bzero(buffer, 32);
@@ -163,21 +169,23 @@ int main(int argc, char *argv[]){
                     break;
                 }
                 p2_choice = atoi(buffer) - 1;
+                bzero(reply, sizeof(reply));
 
                 // Validate P2's energy server-side
                 if (p2_choice == -1) {
                     p2_valid = 1;
-                    send(client_sock, "OK", 3, 0); // Inform client move accepted
+                    strcpy(reply, "OK");
                 } else if (p2_choice >= 0 && p2_choice < game.p2_status.hand_count) {
                     if (game.p2_status.hand[p2_choice].cost <= game.p2_status.energy) {
                         p2_valid = 1;
-                        send(client_sock, "OK", 3, 0); 
+                        strcpy(reply,"OK"); 
                     } else {
-                        send(client_sock, "RETRY", 6, 0); // Client must prompt again
+                        strcpy(reply,"RETRY");
                     }
                 } else {
-                    send(client_sock, "RETRY", 6, 0);
+                    strcpy(reply,"RETRY");
                 }
+                send(client_sock, reply, sizeof(reply), 0); // Send exactly 16 bytes
             }
             usleep(10000);
             
@@ -315,12 +323,22 @@ int main(int argc, char *argv[]){
             }
 
             memset(game.message, 0, sizeof(game.message));
+            char final_msg[1024];
+
             if (game.p1_status.hp <= 0 && game.p2_status.hp <= 0) {
-                sprintf(game.message, "\n=== DRAW! Both players have fallen! ===\n");
-            } else if (game.p2_status.hp <= 0) {
-                sprintf(game.message, "\n=== VICTORY! You defeated the opponent! ===\n");
+                sprintf(final_msg, "\n=== DRAW! Both players have fallen!...Thanks for Playing!... ===\n");
+                strcpy(game.message, final_msg);
+                typewriter(final_msg, 30); // Local print to server
+            } else if (game.p1_status.hp <= 0) {
+                // Server lost (P1), Client won (P2)
+                sprintf(final_msg, "\n=== DEFEAT! Better luck next time!...Thanks for Playing!... ===\n");
+                typewriter(final_msg, 30); 
+                sprintf(game.message, "\n=== VICTORY! You defeated the opponent!...Thanks for Playing!... ===\n");
             } else {
-                sprintf(game.message, "\n=== DEFEAT! You were struck down! ===\n");
+                // Server won (P1), Client lost (P2)
+                sprintf(final_msg, "\n=== VICTORY! You defeated the opponent!...Thanks for Playing!... ===\n");
+                typewriter(final_msg, 30);
+                sprintf(game.message, "\n=== DEFEAT! You have been defeated...Thanks for Playing!... ===\n");
             }
 
             send(client_sock, &game, sizeof(game), 0);

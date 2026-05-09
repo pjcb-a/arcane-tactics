@@ -19,6 +19,7 @@ typedef struct {
     int utility;
     int cost;
     int priority;
+    char desc[128];
 } Card;
 
 typedef struct {
@@ -41,7 +42,7 @@ typedef struct {
     int p1_roll;
     int p2_roll;
     int turn_winner;
-    int deck[40];
+    int deck[33];
     int deck_ptr;
 } GameState;
 
@@ -62,6 +63,8 @@ typedef struct {
 
 
 void die_with_error(char *error_msg);
+void display_card_glossary();
+void typewriter(const char *text, int delay_ms);
 void shuffle_deck(GameState *game);
 void draw_card(Player *player, GameState *game, int num_cards);
 void execute_card(Player *caster, Player *target, Card card, int is_player, char *combat_log);

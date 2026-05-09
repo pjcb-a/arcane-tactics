@@ -1,23 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <unistd.h>
 #include "common.h"
-
-// [NEW CODE - Typewriter function for animated reveal]
-void typewriter(const char *text, int delay_ms) {
-    if (text == NULL) return;
-    for (int i = 0; text[i] != '\0'; i++) {
-        printf("%c", text[i]);
-        fflush(stdout);
-        usleep(delay_ms * 1000);
-    }
-    printf("\n");
-}
 
 int main(int argc,  char *argv[]){
     
@@ -65,7 +54,8 @@ int main(int argc,  char *argv[]){
     if(n < 0) die_with_error("Error: Server Disconnected...\n");
     typewriter(game.message, 30);
 
-
+    display_card_glossary();
+    
     // 2. GAME PHASE -- Display of cards and start of round 
         while(1) {
                 // Receive round start header (contains Arcane Tactics title)
@@ -95,23 +85,36 @@ int main(int argc,  char *argv[]){
                 
                 printf(" \n---- YOUR HAND ---- \n\n");
                 for(int i = 0; i < game.p2_status.hand_count; i++) {
-                    printf("[%d] %-15s (  DMG: %d, UTIL: %d, COST: %d, PRIO:%d  )\n", i + 1,
+                    printf("[%d] %-15s (  DMG: %d, UTIL: %d, COST: %d )\n", i + 1,
                     game.p2_status.hand[i].name,
                     game.p2_status.hand[i].damage,
                     game.p2_status.hand[i].utility,
-                    game.p2_status.hand[i].cost,
-                    game.p2_status.hand[i].priority);
+                    game.p2_status.hand[i].cost);
                 }
 
             // NEW: CONTINUOUS VALIDATION LOOP 
             int p2_valid = 0;
             while (!p2_valid) {
-                // [NEW/ALTERED CODE - Generic prompt because order is unknown]
-                printf("\n< Select card index (0 to Skip) >> ");
+                printf("\n< Select card index (0 to Skip, ?# to inspect Card #) >> ");
 
                 //Send updates to server 
                 bzero(buffer, sizeof(buffer));
                 fgets(buffer, sizeof(buffer), stdin);
+
+                if (buffer[0] == '?') {
+                    int inspect_idx = atoi(&buffer[1]) - 1; 
+                    
+                    if (inspect_idx >= 0 && inspect_idx < game.p2_status.hand_count) {
+                        printf("\n[INFO] %s: %s\n", 
+                            game.p2_status.hand[inspect_idx].name, 
+                            game.p2_status.hand[inspect_idx].desc);
+                    } else {
+                        printf("[!] Invalid card to inspect.\n");
+                    }
+                    // Skip the network send and restart the prompt loop
+                    continue; 
+                }
+
                 send(client_sock, buffer, sizeof(buffer), 0);
 
                 // Receive validation from server
