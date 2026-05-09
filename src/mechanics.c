@@ -10,20 +10,20 @@
 const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
 
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
-    {"Laser Beam", 10, 0, 1, 0}, // light atk
+    {"Laser Beam", 15, 0, 1, 0}, // light atk
     {"Comet", 35, 0, 2, 0}, // heavy atk
     {"Lightning Flash", 12, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
-    {"Shackle", 7, 1, 1, 0}, // enemy deals -8 damage next atk
-    {"Life Drain", 20, 10, 2, 0}, // 10 dmg and 10 heal
+    {"Shackle", 8, 1, 1, 0}, // enemy deals -8 damage next atk
+    {"Life Drain", 15, 10, 2, 0}, // 10 dmg and 10 heal
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
     {"Barrier", 0, 18, 2, 0}, // add 18 shield
-    {"Psychic", 2, 0, 1, 0}, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
+    {"Psychic", 5, 0, 1, 0}, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
     {"Rejuvenate", 0, 10, 1, 0}, // regen 10hp
     {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a guaranteed chance to deal 2x damage
-    {"Arcane Gambit", 10, 20, 1, 0}, // 50/50 chance to heal 20 hp or deal 10 dmg to yourself
+    {"Arcane Gambit", 10, 20, 1, 0}, // 50/50 chance to heal 20 hp or deal 10 dmg to yourself and the enemy
 
-    // EMPTY SKIP MOVE TO SKIP TURN 
+    // EMPTY SKIP MOVE TO SKIP TURN. NOT INCLUDED IN ROLL BUT CAN BE PICKED ANYTIME
     {"Skip", 0, 0, 0, 0}
 };
 
