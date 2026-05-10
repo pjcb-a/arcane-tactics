@@ -32,6 +32,27 @@ void die_with_error(char *error_msg){
     exit(-1);
 }
 
+
+// UI DESIGN
+void clear_screen() {
+    printf("\033[2J\033[H"); // Clears the terminal and moves cursor to top-left
+}
+
+void print_welcome_banner() {
+    clear_screen();
+    printf("=======================================================================\n");
+    printf("      ___                               _____           _   _            \n");
+    printf("     / _ \\                            |_   _|         | | (_)          \n");
+    printf("    / /_\\ \\_ __ ___ __ _ _ __   ___    | | __ _  ___| |_ _  ___  ___  \n");
+    printf("    |  _  | '__/ __/ _` | '_ \\ / _ \\   | |/ _` |/ __| __| |/ __ / __| \n");
+    printf("    | | | | | | (_| (_| | | | || __/     | | (_| | (__| |_| | (__ \\__ \\ \n");
+    printf(" \\_| |_/_|  \\___\\__,_|_| |_|\\___| \\_/\\__,_|\\___|\\__|_|\\___|___/\n");
+    printf("=======================================================================\n");
+    printf("                      Waiting for opponent...\n");
+    printf("=======================================================================\n\n");
+}
+
+
 void typewriter(const char *text, int delay_ms) {
     if (text == NULL) return;
     for (int i = 0; text[i] != '\0'; i++) {
@@ -67,38 +88,54 @@ int dice_roll(int *p1_roll, int *p2_roll){
     return (*p1_roll > *p2_roll) ? 1 : 2; // return p1 win else p2 win
 }
 
-// hp bar ui
-void get_ui_elements(Player *p, char *hp_bar, char *status_str) {
-    int filled = (p->hp * 20) / MAX_HP; // 20-character wide HP bar
-    if (filled < 0) filled = 0;
+
+// NEW UI FOR HP AND STAT BARS
+void print_stat_bars(Player *p, const char* label) {
+    printf("%s %-10s %s\n", BOLD, label, RESET);
     
-    strcpy(hp_bar, "[");
-    for(int i = 0; i < 20; i++) {
-        if(i < filled) strcat(hp_bar, "#");
-        else strcat(hp_bar, "-");
+    // HP Bar: Green if high, Yellow if mid, Red if low
+    printf("HP:  [");
+    if (p->hp > 60) printf(GREEN);
+    else if (p->hp > 25) printf(YELLOW);
+    else printf(RED);
+
+    int bars = (p->hp * 20) / MAX_HP; 
+    if (bars < 0) bars = 0; // Prevent negative bars if HP is negative
+    for (int i = 0; i < 20; i++) {
+        if (i < bars) printf("■");
+        else printf(" ");
     }
-    strcat(hp_bar, "]");
+    printf(RESET "] %d/%d\n", p->hp, MAX_HP);
 
-    strcpy(status_str, "");
-    if (p->stun_turns > 0) strcat(status_str, "[STUNNED] ");
-    if (p->shackle_turns > 0) strcat(status_str, "[SHACKLED] ");
-    if (p->aura_active > 0) strcat(status_str, "[AURA] ");
-    
-    // If no statuses are active, display NONE
-    if (strlen(status_str) == 0) strcpy(status_str, "[NONE]");
+    // Shield: Only shows if active (Cyan)
+    if (p->shield > 0) {
+        printf("SHD: " CYAN "[");
+        for(int i=0; i < (p->shield/5); i++) printf("≡");
+        printf("] (+%d)" RESET "\n", p->shield);
+    }
+
+    // Energy: Blue dots
+    printf("NRG: " BLUE);
+    for (int i = 0; i < p->energy; i++) printf("♦ ");
+    printf(RESET "(%d/10)\n", p->energy);
+
+    // Status Effects
+    if (p->stun_turns > 0) printf(YELLOW " [!] STUNNED " RESET);
+    if (p->shackle_turns > 0) printf(RED " [!] SHACKLED " RESET);
+    if (p->aura_active) printf(CYAN " [!] AURA ACTIVE " RESET);
+    printf("\n");
 }
-
 
 // the random card giver/shuffler function to each player at the start of the game and when they draw cards
 // mechanics.c
 
 void shuffle_deck(GameState *game) {
-    for (int i = 0; i < 33; i++) {
+    for (int i = 0; i < 30; i++) {
         game->deck[i] = i % 10; 
     }
 
     // optimized card shuffle wherein a card can be shuffled 3 times only
-    for (int i = 39; i > 0; i--) {
+    for (int i = 29; i > 0; i--) {
         int j = rand() % (i + 1);
         // Swap deck[i] with deck[j]
         int temp = game->deck[i];
@@ -118,8 +155,8 @@ void draw_card(Player *player, GameState *game, int num_cards) {
             
             game->deck_ptr++;
             
-            // If we run out of cards (40 cards drawn), reshuffle
-            if (game->deck_ptr >= 40) {
+            // If we run out of cards (30 cards drawn), reshuffle
+            if (game->deck_ptr >= 30) {
                 shuffle_deck(game);
             }
         }
@@ -185,7 +222,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         return;
     }
 
-    sprintf(temp, "\n--- %s used [%s]! ---\n", caster_name, card.name);
+    sprintf(temp, "\n--- " BOLD "%s" RESET " used " BLUE "[%s]!" RESET "---\n", caster_name, card.name);
     safe_append_log(combat_log, temp);
 
     // 1. PRE-ATTACK CHECKS 
@@ -249,7 +286,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
-                sprintf(temp, "%s took %d damage!\n", target_name, dmg_int);
+                sprintf(temp, BOLD " %s " RESET "took" RED " %d " RESET "damage!\n", target_name, dmg_int);
                 safe_append_log(combat_log, temp);
             }
         }
@@ -321,7 +358,7 @@ int is_full(ActionQueue *q) {
 void enqueue(ActionQueue *q, Action data){
     if(is_full(q)) {
         printf("Queue is Full\n");
-        return; // <--- FIX: Prevents logic from continuing if full
+        return; 
     }
 
     if(is_empty(q)){
@@ -332,7 +369,7 @@ void enqueue(ActionQueue *q, Action data){
     }
 
     q->queue[q->rear] = data;
- } // <--- SYNTAX FIX: This brace closes the enqueue function properly
+ } 
 
 Action dequeue(ActionQueue *q){
     Action empty = q->queue[q->front];
@@ -343,5 +380,35 @@ Action dequeue(ActionQueue *q){
         q->front = (q->front + 1) % q->size;
     }
     return empty;
+}
+
+void print_victory_screen() {
+    clear_screen();
+    printf(CYAN BOLD);
+    printf("==========================================================\n");
+    printf("  _    _  _____  _____  _______  _____  ______ __   __\n");
+    printf(" | |  | ||_   _|/ ____||__   __|/ __  \\|  __  \\\\ \\ / /\n");
+    printf(" | |  | |  | | | |        | |  | |  | || |__) | \\ V / \n");
+    printf(" | |/\\| |  | | | |        | |  | |  | ||  _  /   > <  \n");
+    printf(" \\  /\\  / _| |_| |____    | |  | |__| || | \\ \\  / . \\ \n");
+    printf("  \\/  \\/ |_____|\\_____|   |_|   \\____/ |_|  \\_\\/_/ \\_\\\n");
+    printf("==========================================================\n");
+    printf("                YOU DEFEATED THE OPPONENT!                \n");
+    printf("==========================================================\n" RESET);
+}
+
+void print_defeat_screen() {
+    clear_screen();
+    printf(RED BOLD);
+    printf("==========================================================\n");
+    printf("  _____   ______  ______  ______   ___   _______  \n");
+    printf(" |  __ \\ |  ____||  ____||  ____| / _ \\ |__   __|\n");
+    printf(" | |  | || |__   | |__   | |__   / /_\\ \\   | |   \n");
+    printf(" | |  | ||  __|  |  __|  |  __|  |  _  |   | |   \n");
+    printf(" | |__| || |____ | |     | |____ | | | |   | |   \n");
+    printf(" |_____/ |______||_|     |______||_| |_|   |_|   \n");
+    printf("==========================================================\n");
+    printf("                YOU HAVE BEEN STRUCK DOWN                 \n");
+    printf("==========================================================\n" RESET);
 }
 

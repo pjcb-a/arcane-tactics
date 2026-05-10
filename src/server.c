@@ -41,6 +41,9 @@ int main(int argc, char *argv[]){
         die_with_error("Error: bind() Failed.");
 
     listen(server_sock, 5);
+
+    print_welcome_banner();
+
     printf("Server listening on port %d ...\n", port_no);
 
     client_size = sizeof(client_addr);
@@ -48,7 +51,7 @@ int main(int argc, char *argv[]){
     if (client_sock < 0)
         die_with_error("Error: accept() Failed.");
 
-    printf("Client successfully connected ...\n");
+    printf("Client successfully connected ...\n\n");
 
     GameState game;
     memset(&game, 0, sizeof(GameState));
@@ -58,14 +61,14 @@ int main(int argc, char *argv[]){
     game.p1_status.hp = MAX_HP;
     game.p1_status.energy = START_ENERGY;
     game.p1_status.hand_count = 0;
-    char my_hp[32], my_stat[64];
+    // char my_hp[32], my_stat[64];
 
     game.p2_status.hp = MAX_HP;
     game.p2_status.energy = START_ENERGY;
     game.p2_status.hand_count = 0;
-    char op_hp[32], op_stat[64];
+    // char op_hp[32], op_stat[64];
 
-    sprintf(game.message, "Welcome to Arcane Tactics! Match Initiated.");
+    sprintf(game.message, "\nWelcome to Arcane Tactics! Match Initiated.\n");
 
     // Send initial game state
     send(client_sock, &game, sizeof(game), 0);
@@ -99,25 +102,46 @@ int main(int argc, char *argv[]){
                                   round_num, (round_num > 5) ? "         MANA SURGE ACTIVE!        \n" : "");
             send(client_sock, &game, sizeof(game), 0);
 
-            get_ui_elements(&game.p1_status, my_hp, my_stat);
-            get_ui_elements(&game.p2_status, op_hp, op_stat);
+            // get_ui_elements(&game.p1_status, my_hp, my_stat);
+            // get_ui_elements(&game.p2_status, op_hp, op_stat);
 
-            printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, my_stat);
-            printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, op_stat);
-            printf("Your Energy: %d | Opponent Energy: %d\n", game.p1_status.energy, game.p2_status.energy);
+            // printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, my_stat);
+            // printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, op_stat);
+            // printf("Your Energy: %d | Opponent Energy: %d\n", game.p1_status.energy, game.p2_status.energy);
 
 
-            printf(" \n---- YOUR HAND ---- \n\n");
-            int j = 1;
-            for(int i = 0; i < game.p1_status.hand_count; i++) {
-                printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d)\n", j,
-                    game.p1_status.hand[i].name,
-                    game.p1_status.hand[i].damage,
-                    game.p1_status.hand[i].utility,
-                    game.p1_status.hand[i].cost
-                    );
-                    j++;
-            }
+            // printf(" \n---- YOUR HAND ---- \n\n");
+            // int j = 1;
+            // for(int i = 0; i < game.p1_status.hand_count; i++) {
+            //     printf("[%d] %-15s (DMG:%d, UTIL:%d, COST:%d)\n", j,
+            //         game.p1_status.hand[i].name,
+            //         game.p1_status.hand[i].damage,
+            //         game.p1_status.hand[i].utility,
+            //         game.p1_status.hand[i].cost
+            //         );
+            //         j++;
+            // }
+
+            // NEW UI FOR HP AND STAT BAR
+              // 1. Clear previous turn frame
+                    // printf("\033[H\033[J"); 
+
+                    // 2. Print Opponent Status (Top)
+                    print_stat_bars(&game.p2_status, "\n\nOPPONENT ");
+
+                    printf("\n------------------------------------------\n\n");
+
+                    // 3. Print Your Status (Bottom)
+                    print_stat_bars(&game.p1_status, "YOU ");
+
+                    // 4. Print Hand with colors
+                    printf("\n--- YOUR HAND ---\n");
+                    for(int i = 0; i < game.p1_status.hand_count; i++) {
+                        printf("%d. " CYAN "%-15s" RESET " (Damage: " RED "%d" RESET ", Cost: " BLUE "%d" RESET ")\n", 
+                                i+1, game.p1_status.hand[i].name, game.p1_status.hand[i].damage, game.p1_status.hand[i].cost);
+                    }
+
+
 
             // === NEW: CONTINUOUS AFFORDABILITY CHECK PHASE ===
             
@@ -243,16 +267,16 @@ int main(int argc, char *argv[]){
             const char *client_grammar = (game.turn_winner == 2) ? "go" : "goes";
 
             char server_gamble[256];
-            sprintf(server_gamble, "\n------- TURN GAMBLE -------\n"
-                                "You rolled: %d, Opponent rolled: %d\n"
-                                "Winner: %s %s first!\n"
+            sprintf(server_gamble, "\n-------" BOLD "TURN GAMBLE" RESET "-------\n"
+                                BLUE "You " RESET "rolled: " GREEN "%d" RESET " , " RED "Opponent" RESET " rolled: " GREEN "%d\n" RESET
+                                BOLD"Winner:"RESET  YELLOW " %s" RESET" %s first!\n"
                                 "---------------------------\n",
                                 game.p1_roll, game.p2_roll, server_winner, server_grammar);
 
             char client_gamble[256];
-            sprintf(client_gamble, "\n------- TURN GAMBLE -------\n"
-                                "You rolled: %d, Opponent rolled: %d\n"
-                                "Winner: %s %s first!\n"
+            sprintf(client_gamble, "\n-------" BOLD "TURN GAMBLE" RESET "-------\n"
+                                BLUE "You " RESET "rolled: " GREEN "%d" RESET " , " RED "Opponent" RESET " rolled: " GREEN "%d\n" RESET
+                                BOLD"Winner:"RESET  YELLOW " %s" RESET" %s first!\n"
                                 "---------------------------\n",
                                 game.p2_roll, game.p1_roll, client_winner, client_grammar);
 
@@ -323,23 +347,19 @@ int main(int argc, char *argv[]){
             }
 
             memset(game.message, 0, sizeof(game.message));
-            char final_msg[1024];
 
-            if (game.p1_status.hp <= 0 && game.p2_status.hp <= 0) {
-                sprintf(final_msg, "\n=== DRAW! Both players have fallen!...Thanks for Playing!... ===\n");
-                strcpy(game.message, final_msg);
-                typewriter(final_msg, 30); // Local print to server
-            } else if (game.p1_status.hp <= 0) {
-                // Server lost (P1), Client won (P2)
-                sprintf(final_msg, "\n=== DEFEAT! Better luck next time!...Thanks for Playing!... ===\n");
-                typewriter(final_msg, 30); 
-                sprintf(game.message, "\n=== VICTORY! You defeated the opponent!...Thanks for Playing!... ===\n");
-            } else {
-                // Server won (P1), Client lost (P2)
-                sprintf(final_msg, "\n=== VICTORY! You defeated the opponent!...Thanks for Playing!... ===\n");
-                typewriter(final_msg, 30);
-                sprintf(game.message, "\n=== DEFEAT! You have been defeated...Thanks for Playing!... ===\n");
-            }
+        if (game.p1_status.hp <= 0 && game.p2_status.hp <= 0) {
+            strcpy(game.message, "\n=== DRAW! Both players have fallen! ===\n");
+            printf("\n=== DRAW! Both players have fallen! ===\n");
+        } else if (game.p1_status.hp <= 0) {
+            // Server lost, Client won
+            print_defeat_screen();
+            sprintf(game.message, "VICTORY!"); // Send the keyword to trigger client screen
+        } else {
+            // Server won, Client lost
+            print_victory_screen();
+            sprintf(game.message, "DEFEAT!"); // Send the keyword to trigger client screen
+        }
 
             send(client_sock, &game, sizeof(game), 0);
         usleep(500000);

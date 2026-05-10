@@ -16,8 +16,8 @@ int main(int argc,  char *argv[]){
     char buffer[32];
 
     GameState game;
-    char my_hp[32], op_hp[32];
-    char my_stat[64], op_stat[64];
+    // char my_hp[32], op_hp[32];
+    // char my_stat[64], op_stat[64];
     
     
     if (argc < 3) {
@@ -29,6 +29,8 @@ int main(int argc,  char *argv[]){
     client_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (client_sock < 0)
         die_with_error("Error: socket() Failed.");
+
+    print_welcome_banner();
 
     //server connection setup
     printf("Looking for host '%s'...\n", argv[1]);
@@ -47,7 +49,7 @@ int main(int argc,  char *argv[]){
     if (connect(client_sock, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
         die_with_error("Error: connect() Failed.");
 
-    printf("Connection successful!\n");
+    printf("Connection successful!\n\n");
 
     // Receive initial welcome message
     n = recv(client_sock, &game, sizeof(game), MSG_WAITALL);
@@ -67,30 +69,57 @@ int main(int argc,  char *argv[]){
 
 
                 if (strstr(game.message, "VICTORY!") || strstr(game.message, "DEFEAT!") || strstr(game.message, "DRAW!")) {
-                    typewriter(game.message, 30);
-                    printf("\nDisconnecting from Server...\n");
-                    break;
+                if (strstr(game.message, "VICTORY!")) {
+                    print_victory_screen();
+                } else if (strstr(game.message, "DEFEAT!")) {
+                    print_defeat_screen();
+                } else {
+                    printf("\n=== DRAW! Both players have fallen! ===\n"); // Standard print for Draw
                 }
+                
+                usleep(1000000); // Wait 1 second before disconnecting
+                printf("\nDisconnecting from Server...\n");
+                break;
+            }
 
 
                 printf("%s", game.message);
 
-                get_ui_elements(&game.p2_status, my_hp, my_stat);
-                get_ui_elements(&game.p1_status, op_hp, op_stat);
+                // get_ui_elements(&game.p2_status, my_hp, my_stat);
+                // get_ui_elements(&game.p1_status, op_hp, op_stat);
 
-                printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, my_stat);
-                printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, op_stat);
-                printf("Your Energy: %d | Opponent Energy: %d\n", game.p2_status.energy, game.p1_status.energy);
+                // printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, my_stat);
+                // printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, op_stat);
+                // printf("Your Energy: %d | Opponent Energy: %d\n", game.p2_status.energy, game.p1_status.energy);
 
-                
-                printf(" \n---- YOUR HAND ---- \n\n");
-                for(int i = 0; i < game.p2_status.hand_count; i++) {
-                    printf("[%d] %-15s (  DMG: %d, UTIL: %d, COST: %d )\n", i + 1,
-                    game.p2_status.hand[i].name,
-                    game.p2_status.hand[i].damage,
-                    game.p2_status.hand[i].utility,
-                    game.p2_status.hand[i].cost);
-                }
+
+                // 1. Clear previous turn frame
+                    // printf("\033[H\033[J"); 
+
+                    // 2. Print Opponent Status (Top)
+                    print_stat_bars(&game.p1_status, "\n\nOPPONENT");
+
+                    printf("\n------------------------------------------\n");
+
+                    // 3. Print Your Status (Bottom)
+                    print_stat_bars(&game.p2_status, "YOU ");
+
+                    // 4. Print Hand with colors
+                    printf("\n--- YOUR HAND ---\n");
+                    for(int i = 0; i < game.p2_status.hand_count; i++) {
+                        printf("%d. " CYAN "%-15s" RESET " (Damage: " RED "%d" RESET ", Cost: " BLUE "%d" RESET ")\n", 
+                                i+1, game.p2_status.hand[i].name,game.p2_status.hand[i].damage, game.p2_status.hand[i].cost);
+                    }
+
+
+                // printf(" \n---- YOUR HAND ---- \n\n");
+                // for(int i = 0; i < game.p2_status.hand_count; i++) {
+                //     printf("[%d] %-15s (  DMG: %d, UTIL: %d, COST: %d )\n", i + 1,
+                //     game.p2_status.hand[i].name,
+                //     game.p2_status.hand[i].damage,
+                //     game.p2_status.hand[i].utility,
+                //     game.p2_status.hand[i].cost);
+                // }
 
             // NEW: CONTINUOUS VALIDATION LOOP 
             int p2_valid = 0;
@@ -135,10 +164,7 @@ int main(int argc,  char *argv[]){
                 die_with_error("Error: Server Disconnected...\n");
                 break;
             }
-            
-            // [NEW/ALTERED CODE - Animated Typewriter Output]
-            // Apply P2 perspective before displaying o 
-            // apply_perspective(game.message, client_log, 0); // 0 = P2 = "You"
+
             typewriter(game.message, 20);
 
             // Receive updated game state with new cards

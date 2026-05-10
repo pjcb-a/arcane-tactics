@@ -8,6 +8,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define RESET   "\033[0m"
+#define RED     "\033[1;31m"
+#define GREEN   "\033[1;32m"
+#define YELLOW  "\033[1;33m"
+#define BLUE    "\033[1;34m"
+#define CYAN    "\033[1;36m"
+#define WHITE   "\033[1;37m"
+#define BOLD    "\033[1m"
+
 #define MAX_HP 100
 #define START_ENERGY 2
 #define MAX_HAND_SIZE 10
@@ -42,7 +51,7 @@ typedef struct {
     int p1_roll;
     int p2_roll;
     int turn_winner;
-    int deck[33];
+    int deck[30];
     int deck_ptr;
 } GameState;
 
@@ -63,6 +72,7 @@ typedef struct {
 
 
 void die_with_error(char *error_msg);
+void print_welcome_banner();
 void display_card_glossary();
 void typewriter(const char *text, int delay_ms);
 void shuffle_deck(GameState *game);
@@ -71,6 +81,9 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
 void card_move(Player *player, Card card);
 void remove_card(Player *player, int card_index);
 int dice_roll(int *p1_roll, int *p2_roll);
+void print_stat_bars(Player *p, const char* label);
+void print_victory_screen();
+void print_defeat_screen();
 
 void init_queue(ActionQueue *q, int size);
 int is_empty(ActionQueue *q);
