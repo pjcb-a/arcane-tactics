@@ -56,24 +56,32 @@ void print_welcome_banner() {
 void typewriter(const char *text, int delay_ms) {
     if (text == NULL) return;
     for (int i = 0; text[i] != '\0'; i++) {
-        printf("%c", text[i]);
-        fflush(stdout); // Forces the letter to print immediately
-        usleep(delay_ms * 1000);
+        if (text[i] == '\033') { // Handle ANSI escape sequences
+            while (text[i] != 'm' && text[i] != '\0') {
+                printf("%c", text[i]);
+                i++;
+            }
+            if (text[i] == 'm') printf("m");
+        } else {
+            printf("%c", text[i]);
+            fflush(stdout);
+            usleep(delay_ms * 1000);
+        }
     }
     printf("\n");
 }
 
 void display_card_glossary() {
-    printf("\n--- Arcane Tactics : Spellbook ---\n");
+    printf("\n" BOLD RED "--- Arcane Tactics : Spellbook ---" RESET "\n");
     for (int i = 0; i < 10; i++) {
-        char buffer[256];
-        sprintf(buffer, "[%s] Cost: %d | Prio: %d\n >> %s", 
+        char buffer[512];
+        sprintf(buffer, COLOR_NAME "[%s]" RESET " Cost: " COLOR_ENERGY "%d" RESET " | Prio: " COLOR_PRIO "%d" RESET "\n >> " COLOR_INFO "%s" RESET, 
                 Card_Pool[i].name, Card_Pool[i].cost, 
                 Card_Pool[i].priority, Card_Pool[i].desc);
-        typewriter(buffer, 50);
+        typewriter(buffer, 25);
         printf("\n");
     }
-    printf("----------------------------------\n\n");
+    printf(BOLD RED "----------------------------------" RESET "\n\n");
 }
 
 
@@ -222,12 +230,12 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         return;
     }
 
-    sprintf(temp, "\n--- " BOLD "%s" RESET " used " BLUE "[%s]!" RESET "---\n", caster_name, card.name);
+    sprintf(temp, "\n--- " BOLD "%s" RESET " used " COLOR_NAME "[%s]" RESET "!---\n", caster_name, card.name);
     safe_append_log(combat_log, temp);
 
     // 1. PRE-ATTACK CHECKS 
     if (caster->stun_turns > 0) {
-        sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", caster_name);
+        sprintf(temp, "Status: %s cannot move - " YELLOW "STUNNED" RESET "! The move is nullified.\n", caster_name);
         safe_append_log(combat_log, temp);
         caster->stun_turns = 0; 
         return; 
@@ -236,14 +244,14 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     // 2. APPLY UTILITY (Healing & Shields)
     if (strcmp(card.name, "Barrier") == 0) {
         caster->shield += card.utility;
-        sprintf(temp, "Status: %s gained %d Shield!\n", caster_name, card.utility);
+        sprintf(temp, "Status: %s gained " CYAN "%d Shield" RESET "!\n", caster_name, card.utility);
         safe_append_log(combat_log, temp);
     }
     
     if (strcmp(card.name, "Rejuvenate") == 0 || strcmp(card.name, "Life Drain") == 0) {
         caster->hp += card.utility;
         if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-        sprintf(temp, "Status: %s healed for %d HP!\n", caster_name, card.utility);
+        sprintf(temp, "Status: %s " COLOR_HEAL "healed for %d HP" RESET "!\n", caster_name, card.utility);
         safe_append_log(combat_log, temp);
     }
 
@@ -252,7 +260,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         float final_damage = card.damage;
 
         if (caster->shackle_turns > 0) {
-            sprintf(temp, "Status: %s cannot attack freely - Shackled! %s's damage is reduced by %d.\n", caster_name, caster_name, caster->shackle_damage);
+            sprintf(temp, "Status: %s cannot attack freely - " RED "Shackled" RESET "! %s's damage is reduced by %d.\n", caster_name, caster_name, caster->shackle_damage);
             final_damage -= caster->shackle_damage;
             safe_append_log(combat_log, temp);
             caster->shackle_turns = 0;
@@ -263,7 +271,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
         }
 
         if (caster->aura_active > 0) { 
-            safe_append_log(combat_log, "PLUS AURA! 2x Damage buff triggered!\n");
+            safe_append_log(combat_log, COLOR_MSG "PLUS AURA! 2x Damage buff triggered!" RESET "\n");
             final_damage *= 2.0f;
             caster->aura_active = 0;
         }
@@ -274,10 +282,10 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             if (target->shield > 0) {
                 if (target->shield >= dmg_int) {
                     target->shield -= dmg_int;
-                    sprintf(temp, "%s's Shield absorbed %d damage! (Remaining: %d)\n", target_name, dmg_int, target->shield);
+                    sprintf(temp, "%s's Shield absorbed " COLOR_DAMAGE "%d damage" RESET "! (Remaining: " CYAN "%d" RESET ")\n", target_name, dmg_int, target->shield);
                     dmg_int = 0;
                 } else {
-                    sprintf(temp, "%s's Shield broke! %d damage bypassed.\n", target_name, target->shield);
+                    sprintf(temp, "%s's Shield " RED "broke" RESET "! %d damage bypassed.\n", target_name, target->shield);
                     dmg_int -= target->shield;
                     target->shield = 0;
                 }
@@ -286,7 +294,7 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
             
             if (dmg_int > 0) {
                 target->hp -= dmg_int;
-                sprintf(temp, BOLD " %s " RESET "took" RED " %d " RESET "damage!\n", target_name, dmg_int);
+                sprintf(temp, BOLD " %s " RESET "took " COLOR_DAMAGE "%d damage" RESET "!\n", target_name, dmg_int);
                 safe_append_log(combat_log, temp);
             }
         }
@@ -295,28 +303,28 @@ void execute_card(Player *caster, Player *target, Card card, int is_player, char
     // 4. SPECIAL STATUS EFFECTS
     if (strcmp(card.name, "Psychic") == 0 && (rand() % 100 < 31)) {
         target->stun_turns = 1;
-        sprintf(temp, "Status: %s cannot move - STUNNED! The move is nullified.\n", target_name);
+        sprintf(temp, "Status: %s cannot move - " YELLOW "STUNNED" RESET "! The move is nullified.\n", target_name);
         safe_append_log(combat_log, temp);
     } 
     else if (strcmp(card.name, "Shackle") == 0) {
         target->shackle_turns = 1;
         target->shackle_damage = 8;
-        sprintf(temp, "Status: %s cannot attack freely - Shackled! Damage reduced by %d.\n", target_name, target->shackle_damage);
+        sprintf(temp, "Status: %s cannot attack freely - " RED "Shackled" RESET "! Damage reduced by %d.\n", target_name, target->shackle_damage);
         safe_append_log(combat_log, temp);
     }
     else if (strcmp(card.name, "Aura Stance") == 0) {
         caster->aura_active = 1;
-        sprintf(temp, "Status: %s entered Aura Stance!\n", caster_name);
+        sprintf(temp, "Status: %s entered " CYAN "Aura Stance" RESET "!\n", caster_name);
         safe_append_log(combat_log, temp);
     }
     else if (strcmp(card.name, "Arcane Gambit") == 0) {
         if (rand() % 100 < 50) {
             caster->hp += 20;
             if (caster->hp > MAX_HP) caster->hp = MAX_HP;
-            sprintf(temp, "Gambit Success: %s healed for 20 HP!\n", caster_name);
+            sprintf(temp, "Gambit Success: %s " COLOR_HEAL "healed for 20 HP" RESET "!\n", caster_name);
         } else {
             caster->hp -= 10;
-            sprintf(temp, "Gambit Fail: %s took 10 recoil damage!\n", caster_name);
+            sprintf(temp, "Gambit Fail: %s took " COLOR_DAMAGE "10 recoil damage" RESET "!\n", caster_name);
         }
         safe_append_log(combat_log, temp);
     }
@@ -386,12 +394,12 @@ void print_victory_screen() {
     clear_screen();
     printf(CYAN BOLD);
     printf("==========================================================\n");
-    printf("  _    _  _____  _____  _______  _____  ______ __   __\n");
-    printf(" | |  | ||_   _|/ ____||__   __|/ __  \\|  __  \\\\ \\ / /\n");
-    printf(" | |  | |  | | | |        | |  | |  | || |__) | \\ V / \n");
-    printf(" | |/\\| |  | | | |        | |  | |  | ||  _  /   > <  \n");
-    printf(" \\  /\\  / _| |_| |____    | |  | |__| || | \\ \\  / . \\ \n");
-    printf("  \\/  \\/ |_____|\\_____|   |_|   \\____/ |_|  \\_\\/_/ \\_\\\n");
+    printf("  _      _  _____  _____  _______  _____  ______  __    __\n");
+    printf(" | |    | ||_   _||  ___||__   __||  _  ||  __  \\\\ \\\\ \\\\  / /\n");
+    printf(" | |    | |  | |  | |      | |   | | | || |__) | \\\\ \\\\/ / \n");
+    printf(" \\\\ \\\\    / /  | |  | |      | |   | |  | ||  _  /   \\\\  /  \n");
+    printf("  \\\\ \\\\__/ /  _| |_ | |___   | |   | |_| || | \\\\ \\\\    | |   \n");
+    printf("   \\\\____/  |_____| \\\\____|  |_|    \\____/ |_|  \\\\_\\\\   |_|   \n");
     printf("==========================================================\n");
     printf("                YOU DEFEATED THE OPPONENT!                \n");
     printf("==========================================================\n" RESET);

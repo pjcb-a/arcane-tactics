@@ -107,8 +107,8 @@ int main(int argc,  char *argv[]){
                     // 4. Print Hand with colors
                     printf("\n--- YOUR HAND ---\n");
                     for(int i = 0; i < game.p2_status.hand_count; i++) {
-                        printf("%d. " CYAN "%-15s" RESET " (Damage: " RED "%d" RESET ", Cost: " BLUE "%d" RESET ")\n", 
-                                i+1, game.p2_status.hand[i].name,game.p2_status.hand[i].damage, game.p2_status.hand[i].cost);
+                        printf("%d. " COLOR_NAME "%-15s" RESET " (Damage: " COLOR_DAMAGE "%d" RESET ", Cost: " COLOR_ENERGY "%d" RESET ")\n", 
+                                i+1, game.p2_status.hand[i].name, game.p2_status.hand[i].damage, game.p2_status.hand[i].cost);
                     }
 
 
@@ -134,7 +134,7 @@ int main(int argc,  char *argv[]){
                     int inspect_idx = atoi(&buffer[1]) - 1; 
                     
                     if (inspect_idx >= 0 && inspect_idx < game.p2_status.hand_count) {
-                        printf("\n[INFO] %s: %s\n", 
+                        printf("\n[INFO] " COLOR_NAME "%s" RESET ": %s\n", 
                             game.p2_status.hand[inspect_idx].name, 
                             game.p2_status.hand[inspect_idx].desc);
                     } else {
