@@ -9,24 +9,22 @@
 
 
 // ALL CARDS/ABILITIES
-const Card Card_Pool[11] = { // damage, util (shield/heal), cost parameters
+const Card Card_Pool[10] = { // damage, util (shield/heal), cost parameters
 
     // ATTACK MOVES (damage dealing, some debuffs and lifesteal)
-    {"Laser Beam", 15, 0, 1, 0, "ADD DESC"}, // light atk
-    {"Comet", 35, 0, 2, 0}, // heavy atk
-    {"Lightning Flash", 16, 0, 1, 1}, // PRIORITY attack. takes queue priority regardless of attack order
-    {"Shackle", 8, 1, 1, 0}, // enemy deals -8 damage next atk
-    {"Life Drain", 15, 10, 2, 0}, // 15 dmg and 10 heal
+    {"Laser Beam", 15, 0, 1, 0, "Light attack dealing 15 damage." }, // light atk
+    {"Comet", 35, 0, 2, 0, "Heavy attack dealing 35 damage." }, // heavy atk
+    {"Lightning Flash", 16, 0, 1, 1, "Quick strike dealing 16 damage. Hits first." }, // PRIORITY attack. takes queue priority regardless of attack order
+    {"Shackle", 8, 1, 1, 0, "Deals 8 damage and reduces enemy's next attack by 8." }, // enemy deals -8 damage next atk
+    {"Life Drain", 15, 10, 2, 0, "Vampiric strike. Deals 15 damage and heals 10 HP." }, // 15 dmg and 10 heal
 
     // UTILITY MOVES (defense, healing, buffs, debuffs)
-    {"Barrier", 0, 18, 2, 1}, // add 18 shield
-    {"Psychic", 5, 0, 1, 0}, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
-    {"Rejuvenate", 0, 10, 1, 0}, // regen 10hp
-    {"Aura Stance", 0, 0, 1, 0}, // next move after aura stance has a guaranteed chance to deal 2x damage
-    {"Arcane Gambit", 10, 20, 1, 0}, // 50/50 chance to heal 20 hp or deal 10 dmg to yourself and the enemy
+    {"Barrier", 0, 18, 2, 1, "Provides 18 Shield to block damage. Priority move." }, // add 18 shield
+    {"Psychic", 5, 0, 1, 0, "Deals 5 damage. 30% chance to stun the enemy." }, // 30% chance to stun enemies. stunned enemies will miss (nullify) their next move
+    {"Rejuvenate", 0, 10, 1, 0, "Restores 10 HP." }, // regen 10hp
+    {"Aura Stance", 0, 0, 1, 0, "Focuses energy. Next move deals double damage." }, // next move after aura stance has a guaranteed chance to deal 2x damage
+    {"Arcane Gambit", 10, 20, 1, 0, "Deals 10 damage. 50/50 chance to heal 20 hp or take 10 recoil." }, // 50/50 chance to heal 20 hp or deal 10 dmg to yourself and the enemy
 
-    // EMPTY SKIP MOVE TO SKIP TURN. NOT INCLUDED IN ROLL BUT CAN BE PICKED ANYTIME
-    {"Skip", 0, 0, 0, 0}
 };
 
 void die_with_error(char *error_msg){
@@ -46,7 +44,7 @@ void typewriter(const char *text, int delay_ms) {
 
 void display_card_glossary() {
     printf("\n--- Arcane Tactics : Spellbook ---\n");
-    for (int i = 0; i < 11; i++) {
+    for (int i = 0; i < 10; i++) {
         char buffer[256];
         sprintf(buffer, "[%s] Cost: %d | Prio: %d\n >> %s", 
                 Card_Pool[i].name, Card_Pool[i].cost, 
@@ -96,7 +94,7 @@ void get_ui_elements(Player *p, char *hp_bar, char *status_str) {
 
 void shuffle_deck(GameState *game) {
     for (int i = 0; i < 33; i++) {
-        game->deck[i] = i % 11; 
+        game->deck[i] = i % 10; 
     }
 
     // optimized card shuffle wherein a card can be shuffled 3 times only

@@ -342,7 +342,6 @@ int main(int argc, char *argv[]){
             }
 
             send(client_sock, &game, sizeof(game), 0);
-            printf("%s", game.message);
         usleep(500000);
     
         close(client_sock);
