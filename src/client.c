@@ -93,18 +93,16 @@ int main(int argc,  char *argv[]){
                 // printf("Your Energy: %d | Opponent Energy: %d\n", game.p2_status.energy, game.p1_status.energy);
 
 
-                // 1. Clear previous turn frame
-                    // printf("\033[H\033[J"); 
-
-                    // 2. Print Opponent Status (Top)
+                // New UI more istetik
+                    //  Print Opponent Status (Top)
                     print_stat_bars(&game.p1_status, "\n\nOPPONENT");
 
                     printf("\n------------------------------------------\n");
 
-                    // 3. Print Your Status (Bottom)
+                    //  Print Your Status (Bottom)
                     print_stat_bars(&game.p2_status, "YOU ");
 
-                    // 4. Print Hand with colors
+                    // Print Hand with colors
                     printf("\n--- YOUR HAND ---\n");
                     for(int i = 0; i < game.p2_status.hand_count; i++) {
                         printf("%d. " COLOR_NAME "%-15s" RESET " (Damage: " COLOR_DAMAGE "%d" RESET ", Cost: " COLOR_ENERGY "%d" RESET ")\n", 

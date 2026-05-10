@@ -108,8 +108,6 @@ int main(int argc, char *argv[]){
             // printf("\n\nYour HP:     %s %d/%d | Shield: %d | Status: %s\n", my_hp, game.p1_status.hp, MAX_HP, game.p1_status.shield, my_stat);
             // printf("Opponent HP: %s %d/%d | Shield: %d | Status: %s\n", op_hp, game.p2_status.hp, MAX_HP, game.p2_status.shield, op_stat);
             // printf("Your Energy: %d | Opponent Energy: %d\n", game.p1_status.energy, game.p2_status.energy);
-
-
             // printf(" \n---- YOUR HAND ---- \n\n");
             // int j = 1;
             // for(int i = 0; i < game.p1_status.hand_count; i++) {
@@ -123,18 +121,15 @@ int main(int argc, char *argv[]){
             // }
 
             // NEW UI FOR HP AND STAT BAR
-              // 1. Clear previous turn frame
-                    // printf("\033[H\033[J"); 
-
-                    // 2. Print Opponent Status (Top)
+                    // Print Opponent Status (Top)
                     print_stat_bars(&game.p2_status, "\n\nOPPONENT ");
 
                     printf("\n------------------------------------------\n\n");
 
-                    // 3. Print Your Status (Bottom)
+                    // Print Your Status (Bottom)
                     print_stat_bars(&game.p1_status, "YOU ");
 
-                    // 4. Print Hand with colors
+                    //  Print Hand with colors
                     printf("\n--- YOUR HAND ---\n");
                     for(int i = 0; i < game.p1_status.hand_count; i++) {
                         printf("%d. " COLOR_NAME "%-15s" RESET " (Damage: " COLOR_DAMAGE "%d" RESET ", Cost: " COLOR_ENERGY "%d" RESET ")\n", 
@@ -143,7 +138,6 @@ int main(int argc, char *argv[]){
 
 
 
-            // === NEW: CONTINUOUS AFFORDABILITY CHECK PHASE ===
             
             // P1 (Server) Input Validation Loop
             int p1_valid = 0;
@@ -213,7 +207,6 @@ int main(int argc, char *argv[]){
             }
             usleep(10000);
             
-            // [NEW/ALTERED CODE - Gambled Turn Order determined AFTER selection]
             game.turn_winner = dice_roll(&game.p1_roll, &game.p2_roll);
 
             // EXECUTION PHASE
@@ -244,7 +237,6 @@ int main(int argc, char *argv[]){
                 game.p2_status.energy -= p2_action.card.cost;
             }
             
-            // [NEW/ALTERED CODE - Enqueue logic using the NEW turn_winner result]
             if (game.turn_winner == 1) {
                 if(p1_action.card.priority == 1) enqueue(&priority_queue, p1_action);
                 else enqueue(&regular_queue, p1_action);
